@@ -82,7 +82,7 @@ X-Frame-Options: SAMEORIGIN
 {"access_token":"NEW_TOKEN","token_type":"bearer","expires_in":3600}⏎
 ```
 
-### Using a Tooken
+### Using a Token
 
 **Sample GET**
 
