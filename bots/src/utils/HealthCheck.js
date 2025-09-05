@@ -102,6 +102,7 @@ export class HealthCheckServer {
     
     res.writeHead(isHealthy ? 200 : 503);
     res.end(JSON.stringify({
+      title: config.bot.name,
       status: isHealthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       ...health
