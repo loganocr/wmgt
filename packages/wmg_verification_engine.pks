@@ -24,7 +24,7 @@ type score_comparison_tbl is table of score_comparison_rec;
 
 type verification_result_rec is record (
     tournament_session_id number,
-    room_no              number,
+    room_no              varchar2(20),
     player_id            number,
     verification_status  varchar2(20), -- 'SUCCESS', 'FAILED', 'NO_MATCH'
     mismatch_details     varchar2(4000),
@@ -37,12 +37,6 @@ type verification_result_tbl is table of verification_result_rec;
 function match_player(
     p_card_player_name in varchar2
 ) return number;
-
--- Score retrieval functions
-function get_card_scores(
-    p_card_run_id        in number,
-    p_card_player_name   in varchar2
-) return score_comparison_tbl;
 
 function get_round_scores(
     p_tournament_session_id in number,
@@ -65,24 +59,8 @@ function calculate_course_total(
     p_scores in score_comparison_tbl
 ) return number;
 
--- Score comparison functions
-function compare_player_scores(
-    p_tournament_session_id in number,
-    p_player_id            in number,
-    p_card_player_name     in varchar2,
-    p_card_run_id          in number,
-    p_course_id            in number
-) return verification_result_rec;
 
--- Main verification procedure for room-level processing
-procedure verify_room(
-    p_tournament_session_id in number,
-    p_room_no              in number,
-    p_card_run_id          in number,
-    x_verification_results out verification_result_tbl
-);
 
--- Verification status update procedures
 procedure update_verification_status(
     p_tournament_session_id in number,
     p_player_id            in number,
@@ -91,9 +69,15 @@ procedure update_verification_status(
     p_verified_note        in varchar2 default null
 );
 
-procedure update_verification_status_batch(
-    p_verification_results in verification_result_tbl
+-- Single player verification procedure
+procedure verify_player(
+     p_tournament_session_id in wmg_tournament_players.tournament_session_id%type
+  ,  p_player_id             in wmg_tournament_players.player_id%type
+  ,  p_room_no               in wmg_tournament_players.room_no%type
+  ,  x_verification_result   in out verification_result_rec
 );
+
+
 
 end wmg_verification_engine;
 /

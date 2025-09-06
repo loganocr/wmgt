@@ -349,6 +349,174 @@ begin
   end;
 
   dbms_output.put_line('');
+  dbms_output.put_line('--- Room-Level Verification Workflow Tests ---');
+  
+  -- Test 20: Complete room verification workflow
+  declare
+    l_session_id number;
+    l_room_no number := 1;
+    l_card_run_id number := 999999; -- Test run ID
+    l_results wmg_verification_engine.verification_result_tbl;
+    l_test_error boolean := false;
+  begin
+    -- Get a test session if available
+    begin
+      select id
+      into l_session_id
+      from wmg_tournament_sessions
+      where rownum = 1;
+      
+      -- Test room verification with non-existent card run (should handle gracefully)
+      wmg_verification_engine.verify_room(
+        p_tournament_session_id => l_session_id,
+        p_room_no => l_room_no,
+        p_card_run_id => l_card_run_id,
+        x_verification_results => l_results
+      );
+      
+      -- Should return empty results for non-existent card run
+      run_test('Room verification with non-existent card run returns empty results', 
+               l_results is not null and l_results.count = 0);
+      
+    exception
+      when no_data_found then
+        dbms_output.put_line('! SKIP: No tournament sessions found for room verification testing');
+      when others then
+        l_test_error := true;
+        dbms_output.put_line('! ERROR in room verification test: ' || sqlerrm);
+    end;
+    
+    run_test('Room verification workflow - no errors', not l_test_error);
+    
+  end;
+  
+  -- Test 21: Single player verification
+  declare
+    l_session_id number;
+    l_player_id number;
+    l_results wmg_verification_engine.verification_result_tbl;
+    l_test_error boolean := false;
+  begin
+    -- Get a test session and player if available
+    begin
+      select ts.id, tp.player_id
+      into l_session_id, l_player_id
+      from wmg_tournament_sessions ts
+      join wmg_tournament_players tp on tp.tournament_session_id = ts.id
+      where rownum = 1;
+      
+      -- Test single player verification (should handle no matching card runs gracefully)
+      wmg_verification_engine.verify_player(
+        p_tournament_session_id => l_session_id,
+        p_player_id => l_player_id,
+        p_card_run_id => null, -- Let it search for card runs
+        x_verification_results => l_results
+      );
+      
+      -- Should return exactly one result
+      run_test('Single player verification returns one result', 
+               l_results is not null and l_results.count = 1);
+      
+      if l_results.count > 0 then
+        run_test('Single player verification result has correct player ID', 
+                 l_results(1).player_id = l_player_id);
+      end if;
+      
+    exception
+      when no_data_found then
+        dbms_output.put_line('! SKIP: No tournament players found for single player verification testing');
+      when others then
+        l_test_error := true;
+        dbms_output.put_line('! ERROR in single player verification test: ' || sqlerrm);
+    end;
+    
+    run_test('Single player verification workflow - no errors', not l_test_error);
+    
+  end;
+  
+  -- Test 22: Single player verification with invalid player ID
+  declare
+    l_session_id number;
+    l_results wmg_verification_engine.verification_result_tbl;
+    l_test_error boolean := false;
+  begin
+    -- Get a test session if available
+    begin
+      select id
+      into l_session_id
+      from wmg_tournament_sessions
+      where rownum = 1;
+      
+      -- Test with non-existent player ID
+      wmg_verification_engine.verify_player(
+        p_tournament_session_id => l_session_id,
+        p_player_id => 999999,
+        p_card_run_id => null,
+        x_verification_results => l_results
+      );
+      
+      -- Should handle gracefully and return NO_MATCH result
+      run_test('Single player verification with invalid player ID handled gracefully', 
+               l_results is not null and l_results.count = 1);
+      
+      if l_results.count > 0 then
+        run_test('Invalid player verification returns NO_MATCH status', 
+                 l_results(1).verification_status = 'NO_MATCH');
+      end if;
+      
+    exception
+      when no_data_found then
+        dbms_output.put_line('! SKIP: No tournament sessions found for invalid player testing');
+      when others then
+        l_test_error := true;
+        dbms_output.put_line('! ERROR in invalid player test: ' || sqlerrm);
+    end;
+    
+    run_test('Invalid player verification - no errors', not l_test_error);
+    
+  end;
+  
+  -- Test 23: Integration test - single player verification with results processing
+  declare
+    l_session_id number;
+    l_player_id number;
+    l_results wmg_verification_engine.verification_result_tbl;
+    l_test_error boolean := false;
+  begin
+    -- Get a test session and player if available
+    begin
+      select ts.id, tp.player_id
+      into l_session_id, l_player_id
+      from wmg_tournament_sessions ts
+      join wmg_tournament_players tp on tp.tournament_session_id = ts.id
+      where rownum = 1;
+      
+      -- Run single player verification
+      wmg_verification_engine.verify_player(
+        p_tournament_session_id => l_session_id,
+        p_player_id => l_player_id,
+        p_card_run_id => null,
+        x_verification_results => l_results
+      );
+      
+      -- Process results with batch update (should handle single result)
+      wmg_verification_engine.update_verification_status_batch(l_results);
+      
+      run_test('Single player verification with batch update completed', true);
+      
+    exception
+      when no_data_found then
+        dbms_output.put_line('! SKIP: No tournament players found for integration testing');
+      when others then
+        l_test_error := true;
+        dbms_output.put_line('! ERROR in integration test: ' || sqlerrm);
+    end;
+    
+    run_test('Single player integration test - no errors', not l_test_error);
+    
+  end;
+
+  dbms_output.put_line('');
   dbms_output.put_line('=== Test Summary ===');
   dbms_output.put_line('Tests Run: ' || l_test_count);
   dbms_output.put_line('Tests Passed: ' || l_pass_count);

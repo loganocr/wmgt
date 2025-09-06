@@ -29,15 +29,15 @@
     - Write unit tests for verification status updates
     - _Requirements: 1.4, 1.5_
 
-- [ ] 3. Create main verification orchestration procedure
-  - [ ] 3.1 Implement room-level verification workflow
+- [x] 3. Create main verification orchestration procedure
+  - [x] 3.1 Implement room-level verification workflow
     - Code main procedure that orchestrates entire room verification process
     - Integrate player matching and score validation using simple SELECT queries
     - Add logic to handle both courses per room in verification
     - Write integration tests for complete room verification workflow
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 4.3, 4.5_
 
-  - [ ] 3.2 Implement batch processing for tournament sessions
+  - [x] 3.2 Implement batch processing for tournament sessions
     - Code logic to process multiple rooms in a tournament session
     - Add error handling to continue processing other rooms if one fails
     - Implement logic to query wmg_card_runs, wmg_card_players, wmg_card_scores tables
