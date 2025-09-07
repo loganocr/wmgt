@@ -69,11 +69,17 @@ procedure update_verification_status(
     p_verified_note        in varchar2 default null
 );
 
+procedure verify_room(
+     p_tournament_session_id in wmg_tournament_players.tournament_session_id%type
+  ,  p_room_no               in wmg_tournament_players.room_no%type
+);
+
 -- Single player verification procedure
 procedure verify_player(
      p_tournament_session_id in wmg_tournament_players.tournament_session_id%type
   ,  p_player_id             in wmg_tournament_players.player_id%type
-  ,  p_room_no               in wmg_tournament_players.room_no%type
+  ,  p_room_no               in wmg_tournament_players.room_no%type default null
+  ,  p_room_name             in varchar2 default null
   ,  x_verification_result   in out verification_result_rec
 );
 

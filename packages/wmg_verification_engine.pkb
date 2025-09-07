@@ -551,7 +551,8 @@ end update_verification_status;
 procedure verify_player(
      p_tournament_session_id in wmg_tournament_players.tournament_session_id%type
   ,  p_player_id             in wmg_tournament_players.player_id%type
-  ,  p_room_no               in wmg_tournament_players.room_no%type
+  ,  p_room_no               in wmg_tournament_players.room_no%type default null
+  ,  p_room_name             in varchar2 default null
   ,  x_verification_result   in out verification_result_rec
 )
 is
@@ -575,7 +576,11 @@ begin
 
   -- Set Room Name
   if env.wmgt then
-    l_room := 'WMGT' || p_room_no;
+    if p_room_no is not null then
+      l_room := 'WMGT' || p_room_no;
+    else
+      l_room := p_room_name;
+    end if;
   else
     l_room := p_room_no;
   end if;
@@ -678,6 +683,70 @@ exception
 end verify_player;
 
 
+/**
+ * Verify a complete room by room_no
+ * Verifies all active player's scorecards for a given room.
+ * 
+ *
+ * @param p_tournament_session_id Tournament session ID
+ * @param p_room_no Room the player played in
+ */
+procedure verify_room(
+     p_tournament_session_id in wmg_tournament_players.tournament_session_id%type
+  ,  p_room_no               in wmg_tournament_players.room_no%type
+)
+is
+  l_scope scope_t := gc_scope_prefix || 'verify_room';
+
+  l_result verification_result_rec;
+--  l_room   varchar2(100);
+begin
+
+  for p in (
+    select player_id
+      from wmg_tournament_players
+     where tournament_session_id = p_tournament_session_id
+       and room_no = p_room_no
+       and active_ind = 'Y'
+  )
+  loop
+    -- Assume success because failure will throw and exception
+    l_result.player_id := p.player_id;
+    l_result.verification_status := 'SUCCESS';
+    l_result.mismatch_details := null;
+
+    verify_player(
+        p_tournament_session_id => p_tournament_session_id
+      , p_player_id             => p.player_id
+      , p_room_no               => p_room_no
+      , x_verification_result   => l_result
+    );
+
+
+/*
+    logger.log('.. l_result.tournament_session_id:' || l_result.tournament_session_id);
+    logger.log('.. l_result.room_no:' || l_result.room_no);
+    logger.log('.. l_result.player_id:' || l_result.player_id);
+    logger.log('.. l_result.card_run_id:' || l_result.card_run_id);
+    logger.log('.. l_result.verification_status:' || l_result.verification_status);
+    logger.log('.. l_result.mismatch_details:' || l_result.mismatch_details);
+*/
+
+    if l_result.verification_status = 'SUCCESS' then
+        wmg_verification_engine.update_verification_status(
+            p_tournament_session_id => p_tournament_session_id
+          , p_player_id             => p.player_id
+          , p_verified_flag         => 'Y'
+        );
+    end if;
+
+  end loop;
+
+exception
+  when others then
+    logger.log_error('Unexpected error during room verification'); 
+
+end verify_room;
 
 
 end wmg_verification_engine;
