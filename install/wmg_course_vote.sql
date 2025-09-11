@@ -18,6 +18,7 @@ enable primary key using index
 comment on table wmg_course_vote is 'Register player votes on a course';
 
 create unique index wmg_course_vote_u01 on wmg_course_vote(course_id, player_id); -- only ONE vote per player per course
+create index wmg_course_vote_player_fk on wmg_course_vote(player_id);
 
 comment on column wmg_course_vote.id is 'Primary Key ID';
 comment on column wmg_course_vote.course_id is 'Course voted on';
