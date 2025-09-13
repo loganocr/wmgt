@@ -35,9 +35,9 @@ A Discord bot for WMGT tournament registration that allows players to register f
 
 ## Commands
 
-- `/register` - Register for a tournament session
+- `/register` - Register for a tournament session or change time slots
 - `/unregister` - Unregister from a tournament session  
-- `/mystatus` - View current registrations
+- `/mystatus` - View your current registration and room assignment
 - `/votes` - View current votes on courses
 - `/course` - View current high scores on a course
 - `/timezone` - Set preferred timezone
