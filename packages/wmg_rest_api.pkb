@@ -641,5 +641,144 @@ end handle_registration;
 
 
 
+
+
+procedure get_data(
+    p_source_code in     wmg_rest_sources.source_code%type
+  , x_request_id  in out wmg_rest_request.id%type
+)
+is
+  l_scope  scope_t := gc_scope_prefix || 'get_data';
+
+  l_source_id   wmg_rest_sources.id%type;
+  l_url         wmg_rest_sources.url%type;
+  l_req_clob    clob;
+  l_resp_clob   clob;
+  l_status_code number;
+  l_start_ts    timestamp := systimestamp;
+  l_duration_ms number;
+  l_error_message varchar2(4000);
+begin
+    logger.time_start(l_scope);
+    logger.log('.. source:' || p_source_code, l_scope);
+
+    begin
+        -- find active source (support either case)
+        select id, url
+        into l_source_id, l_url
+        from wmg_rest_sources
+        where source_code = p_source_code
+        and active_ind = 'Y';
+    exception
+        when no_data_found then
+            logger.time_stop(l_scope);
+            raise_application_error(-20001, 'Invalid or inactive source for code: ' || p_source_code);
+    end;
+
+    -- create request row and return generated id
+    insert into wmg_rest_request (
+      source_code
+    , endpoint_url
+    , http_method
+    )
+    values (
+      p_source_code
+    , l_url
+    , 'GET'
+    )
+    returning id into x_request_id;
+
+    logger.log('.. starting request, source=' || p_source_code || ', url=' || l_url || ', request_id=' || x_request_id, l_scope);
+
+    begin
+        -- perform rest call using apex_web_service
+        l_resp_clob := apex_web_service.make_rest_request(
+        p_url         => l_url
+        , p_http_method => 'GET'
+        );
+
+        l_status_code := apex_web_service.g_status_code;
+
+        l_duration_ms := round((cast(systimestamp as date) - cast(l_start_ts as date)) * 24 * 60 * 60 * 1000,2);
+
+        -- update request with response
+        update wmg_rest_request
+            set response_payload = l_resp_clob
+        , status_code      = l_status_code
+        , duration_ms      = l_duration_ms
+        where id = x_request_id;
+
+        logger.log('.. completed request_id=' || x_request_id || ', status=' || nvl(to_char(l_status_code), 'n/a'), l_scope);
+
+    exception
+        when others then
+            logger.log_error('.. error for request_id=' || x_request_id, l_scope);
+
+            l_error_message := sqlerrm;
+
+            update wmg_rest_request
+                set response_payload = null
+                , status_code      = null
+                , is_error_flag    = 'Y'
+                , error_message    = l_error_message
+                , duration_ms      = round((cast(systimestamp as date) - cast(l_start_ts as date)) * 24 * 60 * 60 * 1000)
+            where id = x_request_id;
+
+    end;
+
+    logger.time_stop(l_scope);
+    commit;
+
+end get_data;
+
+
+
+/**
+ * Loop over all the active sources and refresh their data.
+ *
+ *
+ * @example
+ * 
+ * @issue
+ *
+ * @author Jorge Rimblas
+ * @created September 13, 2025
+ * @param
+ * @return
+ */
+procedure refresh_all_sources
+is
+  l_scope  logger_logs.scope%type := gc_scope_prefix || 'refresh_all_sources';
+  l_params logger.tab_param;
+
+  l_request_id wmg_rest_request.id%type;
+begin
+  -- logger.append_param(l_params, 'p_param1', p_param1);
+  logger.log('BEGIN', l_scope, null, l_params);
+
+  for s in (
+    select source_code 
+      from wmg_rest_sources
+     where active_ind = 'Y'
+     )
+  loop
+    l_request_id := null;
+    get_data(
+        p_source_code => s.source_code
+      , x_request_id  => l_request_id
+    );
+  end loop;  
+
+  logger.log('END', l_scope, null, l_params);
+
+  exception
+    when OTHERS then
+      logger.log_error('Unhandled Exception', l_scope, null, l_params);
+      -- x_result_status := mm_api.g_ret_sts_unexp_error;
+      raise;
+end refresh_all_sources;
+
+
+
 end wmg_rest_api;
 /

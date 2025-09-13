@@ -80,6 +80,13 @@ procedure handle_registration(
     p_body in clob
 );
 
+procedure get_data(
+  p_source_code in     wmg_rest_sources.source_code%type
+, x_request_id  in out wmg_rest_request.id%type
+);
+
+procedure refresh_all_sources;
+
 
 end wmg_rest_api;
 /
