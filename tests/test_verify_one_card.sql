@@ -4,8 +4,8 @@ declare
     -- p_player_id             NUMBER := 4185; --	porkpiedoofus
     -- p_player_id             NUMBER := 3213; --	Kyda
     -- p_player_id             NUMBER := 7007; --	MasterDom
-    p_player_id             NUMBER := 6950;
-    p_room_no               NUMBER := 2; -- WMGT24
+    -- p_player_id             NUMBER := 6950;
+    p_room_no               NUMBER := 3; -- WMGT24
 
     l_result wmg_verification_engine.verification_result_rec;
     l_room   VARCHAR2(20);
@@ -26,8 +26,8 @@ declare
     -- p_player_id             NUMBER := 4185; --	porkpiedoofus
     -- p_player_id             NUMBER := 3213; --	Kyda
     -- p_player_id             NUMBER := 7007; --	MasterDom
-    p_player_id             NUMBER := 6950;
-    p_room_no               NUMBER := 3; -- WMGT24
+    p_player_id             NUMBER := 56;
+    p_room_no               NUMBER := 7; -- WMGT24
 
     l_result wmg_verification_engine.verification_result_rec;
     l_room   VARCHAR2(20);

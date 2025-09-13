@@ -154,10 +154,10 @@ begin
   end if;
   
   if p_card_total = p_round_total then
-    log('Totals match', l_scope);
+    log('.. Totals match', l_scope);
     return true;
   else
-    log('Totals do not match', l_scope);
+    log('.. Totals do not match ⚠', l_scope);
     return false;
   end if;
   
@@ -225,7 +225,18 @@ begin
     log('.. Warning: Expected ' || c_total_holes || ' holes but found ' || l_scores.count, l_scope);
     return score_comparison_tbl();
   end if;
-  
+
+  -- Retrieve the player score and store it in the first record for reference
+  l_score_rec := l_scores(1);
+  select distinct cp.relative
+   into l_score_rec.card_score
+    from wmg_card_players cp
+     join wmg_card_scores cs on cs.player = cp.player and cs.run_id = cp.run_id
+    where cs.run_id = p_card_run_id
+      and cp.id = p_card_player_id;
+
+  l_scores(1) := l_score_rec;
+
   log('Retrieved ' || l_scores.count || ' card scores', l_scope);
   log('END', l_scope);
   
@@ -291,25 +302,19 @@ begin
 
   end loop;
 
-  -- -- Get hole-by-hole scores from wmg_rounds_unpivot_mv
-  -- select player_id
-  --      , course_id
-  --      , h
-  --      , score
-  -- bulk collect  into l_score_rec.player_id
-  --      , l_score_rec.course_id
-  --      , l_score_rec.hole_num
-  --      , l_score_rec.round_score
-  --   from wmg_rounds_unpivot_mv u
-  --      , wmg_tournament_sessions ts
-  --  where ts.week = u.week
-  --    and u.player_id = p_player_id
-  --    and u.course_id = p_course_id
-  --    and ts.id = p_tournament_session_id;
+  -- Retrieve the player score and store it in the first record for reference
+  l_score_rec := l_scores(1);
 
-  --   l_scores(l_scores.count) := l_score_rec;
-    
-   
+  select r.final_score
+    into l_score_rec.round_score
+    from wmg_rounds r
+    join wmg_tournament_sessions s on s.week = r.week
+   where r.players_id = p_player_id
+     and r.course_id = p_course_id
+     and s.id = p_tournament_session_id;
+
+  l_scores(1) := l_score_rec;
+
   log('Retrieved ' || l_scores.count || ' round scores', l_scope);
   log('END', l_scope);
   
@@ -343,6 +348,11 @@ begin
     return null;
   end if;
   
+  if g_quick_verify then
+    log('.. Quick verify mode enabled - returning card_score', l_scope);
+    return nvl(p_scores(1).card_score, p_scores(1).round_score);
+  end if;
+
   for i in 1..p_scores.count loop
     if p_scores(i).card_score is not null then
       l_total := l_total + p_scores(i).card_score;
@@ -397,12 +407,17 @@ begin
   l_result.tournament_session_id := p_tournament_session_id;
   l_result.player_id := p_player_id;
   l_result.card_run_id := p_card_run_id;
-  l_result.verification_status := 'FAILED';
+  l_result.verification_status := 'SUCCESS';
   
   -- Get scores from both sources
   l_card_scores := get_card_scores(p_card_run_id, p_card_player_id);
   l_round_scores := get_round_scores(p_tournament_session_id, p_player_id, p_course_id);
   
+  if g_quick_verify then
+    log('.. Quick verify mode enabled - skipping hole-by-hole validation', l_scope);
+    goto verify_totals;
+  end if;
+
   -- Check if we have data from both sources
   if l_card_scores.count = 0 then
     l_result.verification_status := 'NO_MATCH';
@@ -434,15 +449,16 @@ begin
     end loop;
 
     l_result.mismatch_details := l_mismatch_details;
-    log('Hole score validation failed', l_scope);
+    log('.. Hole score validation failed', l_scope);
     return l_result;
   end if;
-  
+
+  <<verify_totals>>
   -- Validate course totals
   l_card_total := calculate_course_total(l_card_scores);
   l_round_total := calculate_course_total(l_round_scores);
   
-  if not validate_course_totals(l_card_total, l_round_total) then
+  if not validate_course_totals(l_card_total, l_round_total) and l_result.verification_status = 'SUCCESS' then
     l_result.verification_status := 'FAILED';
     l_result.mismatch_details := 'Course total mismatch: Card=' || l_card_total || ', Round=' || l_round_total;
     log('Course total validation failed', l_scope);
@@ -638,6 +654,11 @@ begin
 
       log('.. Found matching card run ' || l_card_run_id || ' for player ' || l_player_name, l_scope);
 
+      -- Assign the player_id to the card_player record for future reference
+      update wmg_card_players
+         set player_id = p_player_id
+       where id = l_card_player_id;
+
       -- Now perform the actual score comparison
       l_compare_result := compare_player_scores(
           p_tournament_session_id => p_tournament_session_id
@@ -647,8 +668,34 @@ begin
         , p_card_player_id => l_card_player_id
       );
 
+      update wmg_card_players
+         set verification_status = l_compare_result.verification_status
+           , mismatch_details = l_compare_result.mismatch_details
+       where id = l_card_player_id;
 
   end loop;
+
+  /* Did both cards pass verification? */
+  for v in (
+    select sum(decode(verification_status, 'SUCCESS', 1, 0)) success_count
+        , count(*) total_count
+        , listagg(cp.mismatch_details, ' | ') within group (order by cp.id) as mismatch_details
+      from wmg_card_runs cr
+      join wmg_card_players cp on cp.run_id = cr.id
+      where cp.player_id = p_player_id
+        and cr.room = l_room
+  )
+  loop
+    if v.total_count = 0 then
+      l_compare_result.verification_status := 'NO_MATCH';
+    elsif v.success_count = v.total_count and v.total_count = 2 then
+      l_compare_result.verification_status := 'SUCCESS';
+    else
+      l_compare_result.verification_status := 'FAILED';
+      l_compare_result.mismatch_details := substr(v.mismatch_details, 1, 4000);
+    end if;
+  end loop;
+
 
   l_result.tournament_session_id := p_tournament_session_id;
   l_result.room_no := l_room;
@@ -658,9 +705,9 @@ begin
   l_result.mismatch_details := l_compare_result.mismatch_details;
 
   if l_result.verification_status = 'SUCCESS' then
-    log('Player verification SUCCESSFUL for ' || l_player_name, l_scope);
+    log('.. Player verification SUCCESSFUL for ' || l_player_name, l_scope);
   else
-    log('Player verification FAILED for ' || l_player_name || ': ' || l_result.mismatch_details, l_scope);
+    log('.. Player verification FAILED for ' || l_player_name || ': ' || l_result.mismatch_details, l_scope);
   end if;
 
   <<end_verify_player>>
@@ -703,11 +750,16 @@ is
 begin
 
   for p in (
-    select player_id
+    select id tournament_player_id
+         , player_id
+         , count(*) over () as total_players
+         , row_number() over (partition by tournament_session_id order by player_id) as player_num
       from wmg_tournament_players
      where tournament_session_id = p_tournament_session_id
        and room_no = p_room_no
-       and active_ind = 'Y'
+       and active_ind = 'Y'            -- only registered players
+       and verified_score_flag is null -- only unverified players
+     order by player_id
   )
   loop
     -- Assume success because failure will throw and exception
@@ -738,6 +790,12 @@ begin
           , p_player_id             => p.player_id
           , p_verified_flag         => 'Y'
         );
+
+       if p.player_num = p.total_players  then
+          logger.log('.. Verifying if room ' || p_room_no || ' is complete');
+          wmg_util.verify_players_room(p_tournament_player_id => p.tournament_player_id);
+       end if;
+       commit; -- take it,before something else happens
     end if;
 
   end loop;

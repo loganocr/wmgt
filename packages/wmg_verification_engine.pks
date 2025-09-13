@@ -9,6 +9,8 @@ is
 --*
 --------------------------------------------------------------------------------
 
+g_quick_verify  boolean := false; -- Bypass hole by hole matching and focus on totals only
+
 -- Data types for score comparison and verification results
 type score_comparison_rec is record (
     player_id     number,
