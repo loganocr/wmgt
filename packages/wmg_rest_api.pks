@@ -47,6 +47,9 @@ function format_session_date_epoch(
   , p_time_slot in varchar2
 ) return number;
 
+function format_uptime(p_seconds number, p_short varchar2 default 'N')
+return varchar2;
+
 function build_room_players_json(
     p_tournament_session_id in wmg_tournament_sessions.id%type
   , p_room_no               in wmg_tournament_players.room_no%type

@@ -45,54 +45,6 @@ end convert_session_date_utc;
 
 
 
--- Convert the date for a time_slot  to epoch (UNIX timestamp)
--- this is used by Discord to present dates in the users localtime
-function format_session_date_epoch(
-    p_date      in date
-  , p_time_slot in varchar2
-) return number
-is
-  l_scope scope_t := gc_scope_prefix || 'format_session_date_epoch';
-
-  l_utc_date timestamp with time zone;
-  l_epoch number;
-begin
-    logger.log('START', l_scope);
-    logger.log(p_text => '.. p_date: ' || p_date, p_scope => l_scope);
-    logger.log(p_text => '.. p_time_slot: ' || p_time_slot, p_scope => l_scope);
-
-   select convert_session_date_utc(
-              p_date => p_date + ts.day_offset
-            , p_time_slot => ts.time_slot
-          )
-    into l_utc_date
-    from wmg_time_slots_all_v ts
-   where ts.time_slot = p_time_slot;
-
-  logger.log(p_text => '.. l_utc_date: ' || l_utc_date, p_scope => l_scope);
-  l_epoch := round(
-                  ( extract(day    from (l_utc_date at time zone 'UTC' 
-                                         - timestamp '1970-01-01 00:00:00 UTC')) * 86400   -- 86400 is the number of seconds in a day
-                  + extract(hour   from (l_utc_date at time zone 'UTC' 
-                                         - timestamp '1970-01-01 00:00:00 UTC')) * 3600
-                  + extract(minute from (l_utc_date at time zone 'UTC' 
-                                         - timestamp '1970-01-01 00:00:00 UTC')) * 60
-                  + extract(second from (l_utc_date at time zone 'UTC' 
-                                         - timestamp '1970-01-01 00:00:00 UTC'))
-                  )
-              );
-  logger.log(p_text => '.. l_epoch: ' || l_epoch, p_scope => l_scope);
-
-  return l_epoch;
-
-exception
-  when others then
-     logger.log_error(p_text => 'Unexpected error', p_scope => l_scope);
-    return 0;
-end format_session_date_epoch;
-
-
-
 
 
 
@@ -151,6 +103,88 @@ exception
      logger.log_error(p_text => 'Unexpected error', p_scope => l_scope);
     return format_session_date_utc(p_date);
 end format_session_date_local;
+
+
+
+
+
+-- Convert the date for a time_slot  to epoch (UNIX timestamp)
+-- this is used by Discord to present dates in the users localtime
+function format_session_date_epoch(
+    p_date      in date
+  , p_time_slot in varchar2
+) return number
+is
+  l_scope scope_t := gc_scope_prefix || 'format_session_date_epoch';
+
+  l_utc_date timestamp with time zone;
+  l_epoch number;
+begin
+    logger.log('START', l_scope);
+    logger.log(p_text => '.. p_date: ' || p_date, p_scope => l_scope);
+    logger.log(p_text => '.. p_time_slot: ' || p_time_slot, p_scope => l_scope);
+
+   select convert_session_date_utc(
+              p_date => p_date + ts.day_offset
+            , p_time_slot => ts.time_slot
+          )
+    into l_utc_date
+    from wmg_time_slots_all_v ts
+   where ts.time_slot = p_time_slot;
+
+  logger.log(p_text => '.. l_utc_date: ' || l_utc_date, p_scope => l_scope);
+  l_epoch := round(
+                  ( extract(day    from (l_utc_date at time zone 'UTC' 
+                                         - timestamp '1970-01-01 00:00:00 UTC')) * 86400   -- 86400 is the number of seconds in a day
+                  + extract(hour   from (l_utc_date at time zone 'UTC' 
+                                         - timestamp '1970-01-01 00:00:00 UTC')) * 3600
+                  + extract(minute from (l_utc_date at time zone 'UTC' 
+                                         - timestamp '1970-01-01 00:00:00 UTC')) * 60
+                  + extract(second from (l_utc_date at time zone 'UTC' 
+                                         - timestamp '1970-01-01 00:00:00 UTC'))
+                  )
+              );
+  logger.log(p_text => '.. l_epoch: ' || l_epoch, p_scope => l_scope);
+
+  return l_epoch;
+
+exception
+  when others then
+     logger.log_error(p_text => 'Unexpected error', p_scope => l_scope);
+    return 0;
+end format_session_date_epoch;
+
+
+
+
+
+function format_uptime(p_seconds number, p_short varchar2 default 'N')
+return varchar2
+is
+  l_days    number;
+  l_hours   number;
+  l_minutes number;
+  l_seconds number;
+begin
+  l_days    := floor(p_seconds / 86400);
+  l_hours   := floor(mod(p_seconds, 86400) / 3600);
+  l_minutes := floor(mod(p_seconds, 3600) / 60);
+  l_seconds := floor(mod(p_seconds, 60));
+  
+  if upper(p_short) = 'Y' then
+    -- Short format: 12d 10:47:49
+    return case when l_days > 0 then l_days || 'd ' else '' end ||
+           lpad(l_hours, 2, '0') || ':' ||
+           lpad(l_minutes, 2, '0') || ':' ||
+           lpad(l_seconds, 2, '0');
+  else
+    -- Long format: 12 days, 10 hours, 47 minutes, 49 seconds
+    return case when l_days > 0 then l_days || ' days, ' else '' end ||
+           case when l_hours > 0 then l_hours || ' hours, ' else '' end ||
+           l_minutes || ' minutes, ' ||
+           l_seconds || ' seconds';
+  end if;
+end format_uptime;
 
 
 
@@ -642,6 +676,27 @@ end handle_registration;
 
 
 
+procedure purge_rest_requests
+is
+  l_scope scope_t := gc_scope_prefix || 'purge_rest_requests';
+
+  l_count number;
+begin
+    logger.time_start(l_scope);
+    logger.log('.. purging old requests', l_scope);
+
+    delete from wmg_rest_request
+     where created_on < systimestamp - interval '8' day;
+
+    l_count := sql%rowcount;
+
+    logger.log('.. deleted rows: ' || nvl(to_char(l_count),'0'), l_scope);
+    logger.time_stop(l_scope);
+
+end purge_rest_requests;
+
+
+
 
 procedure get_data(
     p_source_code in     wmg_rest_sources.source_code%type
@@ -725,6 +780,8 @@ begin
             where id = x_request_id;
 
     end;
+
+    purge_rest_requests;
 
     logger.time_stop(l_scope);
     commit;
