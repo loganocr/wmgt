@@ -66,6 +66,7 @@ begin
   
 exception
   when others then
+    logger.log_error(p_text => 'Error in match_player: ' || p_card_player_name, p_scope => l_scope);
     log('Error matching player ' || p_card_player_name || ': ' || sqlerrm, l_scope);
     return null;
 end match_player;
@@ -229,11 +230,12 @@ begin
   -- Retrieve the player score and store it in the first record for reference
   l_score_rec := l_scores(1);
   select distinct cp.relative
-   into l_score_rec.card_score
+    into l_score_rec.final_score
     from wmg_card_players cp
      join wmg_card_scores cs on cs.player = cp.player and cs.run_id = cp.run_id
     where cs.run_id = p_card_run_id
-      and cp.id = p_card_player_id;
+      and cp.id = p_card_player_id
+     fetch first row only;
 
   l_scores(1) := l_score_rec;
 
@@ -306,7 +308,7 @@ begin
   l_score_rec := l_scores(1);
 
   select r.final_score
-    into l_score_rec.round_score
+    into l_score_rec.final_score
     from wmg_rounds r
     join wmg_tournament_sessions s on s.week = r.week
    where r.players_id = p_player_id
@@ -349,8 +351,8 @@ begin
   end if;
   
   if g_quick_verify then
-    log('.. Quick verify mode enabled - returning card_score', l_scope);
-    return nvl(p_scores(1).card_score, p_scores(1).round_score);
+    log('.. Quick verify mode enabled - returning final_score', l_scope);
+    return p_scores(1).final_score;
   end if;
 
   for i in 1..p_scores.count loop

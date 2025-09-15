@@ -19,6 +19,7 @@ type score_comparison_rec is record (
     hole_num      number,
     card_score    number,
     round_score   number,
+    final_score   number,
     match_flag    varchar2(1)
 );
 
