@@ -88,6 +88,7 @@ procedure process_registration(
   , p_player_id   in wmg_tournament_players.player_id%type
   , p_action      in varchar2
   , p_time_slot   in wmg_tournament_players.time_slot%type default null
+  , p_source      in wmg_tournament_players.source%type default 'WEB'
 );
 
 procedure cast_player_vote(

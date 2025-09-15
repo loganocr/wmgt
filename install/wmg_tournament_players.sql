@@ -21,6 +21,7 @@ create table wmg_tournament_players (
   , verified_note                  varchar2(200)
   , issue_code                     varchar2(10) constraint wmg_tournament_pla_issue_fk references wmg_issues(code)
   , active_ind                     varchar2(1) constraint wmg_tournament_players_ck_active check (active_ind in ('Y', 'N')) not null
+  , source                         varchar2(30) --  ('WEB','API','ADMIN')
   , created_by                     varchar2(60 char) default on null coalesce(sys_context('APEX$SESSION','APP_USER'),user) not null
   , created_on                     timestamp with local time zone default on null current_timestamp not null
   , updated_by                     varchar2(60 char)

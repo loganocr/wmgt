@@ -640,6 +640,7 @@ begin
   , p_player_id   => l_discord_user.player_id
   , p_action      => 'SIGNUP'
   , p_time_slot   => l_time_slot
+  , p_source      => 'API'
   );
 
   commit;

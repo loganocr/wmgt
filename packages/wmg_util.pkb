@@ -1995,6 +1995,7 @@ procedure process_registration(
   , p_player_id   in wmg_tournament_players.player_id%type
   , p_action      in varchar2
   , p_time_slot   in wmg_tournament_players.time_slot%type
+  , p_source      in wmg_tournament_players.source%type default 'WEB'
 )
 is
   l_scope  logger_logs.scope%type := gc_scope_prefix || 'process_registration';
@@ -2046,17 +2047,20 @@ begin
     update
        set time_slot = nvl(np.time_slot, p.time_slot)
          , active_ind = np.active_ind
+         , source = p_source
   when not matched then
     insert (
         tournament_session_id
       , player_id
       , time_slot
+      , source
       , active_ind
     )
     values (
         np.tournament_session_id
       , np.player_id
       , np.time_slot
+      , p_source
       , np.active_ind
     );
 
