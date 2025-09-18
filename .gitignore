@@ -8,3 +8,7 @@ reset_id_columns.sql
 .vscode
 .kiro/settings
 *.code-workspace
+
+# Node.js dependencies
+node_modules/
+bots/node_modules/
