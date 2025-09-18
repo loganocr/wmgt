@@ -838,5 +838,73 @@ end refresh_all_sources;
 
 
 
+/**
+ * Create a Job `PROCESS_REFRESH_ALL_SOURCES` that will run:
+ 8  - Every 4 hours Monday to Friday
+ 9  - Every 2 hours Saturday and Sunday
+ *
+ * @example
+ * 
+ * @issue
+ *
+ * @author Jorge Rimblas
+ * @created September 15, 2025
+ * @param
+ * @return
+ */
+procedure schedule_refresh_all_sources
+is
+  l_scope  scope_t := gc_scope_prefix || 'schedule_refresh_all_sources';
+
+  l_job_name  varchar2(100);
+begin
+  -- logger.append_param(l_params, 'p_param1', p_param1);
+  logger.log('BEGIN', l_scope);
+
+  l_job_name := 'PROCESS_REFRESH_ALL_SOURCES';
+
+  begin
+    sys.dbms_scheduler.drop_job (job_name => l_job_name || '_DAYS');
+    sys.dbms_scheduler.drop_job (job_name => l_job_name || '_ENDS');
+  exception
+    when others then null;
+  end;
+      
+
+  logger.log('.. scheduling ' || l_job_name, l_scope);
+
+  sys.dbms_scheduler.create_job (
+      job_name        => l_job_name || '_DAYS'
+    , job_type        => 'STORED_PROCEDURE'
+    , job_action      => 'wmg_rest_api.refresh_all_sources'
+    , number_of_arguments => 0
+--    , start_date      => from_tz(cast(trunc(sysdate) as timestamp), 'UTC') -- Morning UTC = ~ 7pm Central
+    , repeat_interval => 'FREQ=HOURLY; INTERVAL=4; BYDAY=MON,TUE,WED,THU,FRI;'
+    , enabled         => true
+    , auto_drop       => true
+    , comments        => 'Job that refreshes all sources metrics'
+  );
+  
+  sys.dbms_scheduler.create_job (
+      job_name        => l_job_name || '_ENDS'
+    , job_type        => 'STORED_PROCEDURE'
+    , job_action      => 'wmg_rest_api.refresh_all_sources'
+    , number_of_arguments => 0
+    , repeat_interval => 'FREQ=HOURLY; INTERVAL=2; BYDAY=SAT,SUN;'
+    , enabled         => true
+    , auto_drop       => true
+    , comments        => 'Job that refreshes all sources metrics'
+  );
+  
+
+  logger.log('END', l_scope);
+
+  exception
+    when OTHERS then
+      logger.log_error('Unexpected error', l_scope);
+      raise;
+end schedule_refresh_all_sources;
+
+
 end wmg_rest_api;
 /

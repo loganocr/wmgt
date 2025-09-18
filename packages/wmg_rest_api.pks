@@ -89,7 +89,7 @@ procedure get_data(
 );
 
 procedure refresh_all_sources;
-
+procedure schedule_refresh_all_sources;
 
 end wmg_rest_api;
 /
