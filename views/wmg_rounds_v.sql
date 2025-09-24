@@ -3,7 +3,7 @@ as
 select 
     p.id                                         player_id,
     p.account                                    account,
-    nvl(p.name, p.account)                       player_name,
+    case when m.banned_flag is null then nvl(p.name, p.account) else '-redacted-' end player_name,
     p.rank_code,
     p.country_code,
     c.id                                         course_id,
@@ -123,6 +123,7 @@ select
      'Y'
     end ok_for_stats_ind
   , case when r.override_score is null then '' else 'Y' end score_override_flag
+  , r.verification_status
   , r.override_reason
   , r.override_by
   , r.override_on
@@ -133,9 +134,11 @@ select
 from 
     wmg_rounds r,
     wmg_players p,
+    wmg_player_moderation m,
     wmg_courses c,
     wmg_course_strokes cs
 where r.players_id = p.id
   and r.course_id = c.id
+  and p.id = m.player_id(+)
   and cs.course_id(+) = c.id
 /
