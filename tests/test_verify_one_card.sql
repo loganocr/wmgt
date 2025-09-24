@@ -1,11 +1,11 @@
 set serveroutput on size UNLIMITED
 declare
-    p_tournament_session_id NUMBER := 2364; -- S17W12: CLE and CLH
+    p_tournament_session_id NUMBER := 2384; -- S17W12: CLE and CLH
     -- p_player_id             NUMBER := 4185; --	porkpiedoofus
     -- p_player_id             NUMBER := 3213; --	Kyda
     -- p_player_id             NUMBER := 7007; --	MasterDom
     -- p_player_id             NUMBER := 6950;
-    p_room_no               NUMBER := 3; -- WMGT24
+    p_room_no               NUMBER := 22; -- WMGT24
 
     l_result wmg_verification_engine.verification_result_rec;
     l_room   VARCHAR2(20);
@@ -18,21 +18,27 @@ begin
 
 end;
 /
-
+select *
+from logger_logs_5_min
+/
+select *
+from wmg_tournament_sessions
+order by id desc
+/
 
 set serveroutput on size UNLIMITED
 declare
-    p_tournament_session_id NUMBER := 2364; -- S17W12: CLE and CLH
+    p_tournament_session_id NUMBER := 2384; -- S17W12: CLE and CLH
     -- p_player_id             NUMBER := 4185; --	porkpiedoofus
     -- p_player_id             NUMBER := 3213; --	Kyda
     -- p_player_id             NUMBER := 7007; --	MasterDom
-    p_player_id             NUMBER := 56;
-    p_room_no               NUMBER := 7; -- WMGT24
+    p_player_id             NUMBER := 8026;
+    p_room_no               NUMBER := 21; -- WMGT24
 
     l_result wmg_verification_engine.verification_result_rec;
     l_room   VARCHAR2(20);
 begin
-
+    wmg_verification_engine.g_quick_verify := true;
     wmg_verification_engine.verify_player(
         p_tournament_session_id => p_tournament_session_id,
         p_player_id             => p_player_id,
@@ -48,6 +54,15 @@ begin
     dbms_output.put_line('l_result.mismatch_details:' || l_result.mismatch_details);
 end;
 /
+    select cp.*
+    from wmg_card_runs cr
+    join wmg_card_players cp on cp.run_id = cr.id
+    where 1=1
+      and cr.room = 'WMGT21'
+      order by player_id
+-- cp.player = 'BADWOLFF'
+/
+
 select id, time_stamp, text, scope, call_stack
 from logger_logs_5_min
 where scope = 'wmg_verification_engine.verify_player'
