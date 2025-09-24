@@ -36,6 +36,7 @@ create table wmg_rounds (
     override_reason                varchar2(500),
     override_by                    varchar2(60 char),
     override_on                    timestamp with local time zone,
+    verification_status            varchar2(20),
     created_on                     timestamp with local time zone default on null current_timestamp not null,
     created_by                     varchar2(60 char) default on null coalesce(sys_context('APEX$SESSION','APP_USER'),user) not null,
     updated_on                     timestamp with local time zone,

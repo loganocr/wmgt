@@ -310,10 +310,9 @@ begin
   select r.final_score
     into l_score_rec.final_score
     from wmg_rounds r
-    join wmg_tournament_sessions s on s.week = r.week
    where r.players_id = p_player_id
      and r.course_id = p_course_id
-     and s.id = p_tournament_session_id;
+     and r.tournament_session_id = p_tournament_session_id;
 
   l_scores(1) := l_score_rec;
 
@@ -642,6 +641,13 @@ begin
     log('.. ' || c.course_name, l_scope);
     log('========================================', l_scope);
 
+    update wmg_rounds r
+       set r.verification_status = 'NO_MATCH'
+     where r.players_id = p_player_id
+       and r.course_id = c.course_id
+       and r.tournament_session_id = p_tournament_session_id
+       and r.verification_status is null;
+
     -- Look for card runs that contain this player
       select cr.id
            , cp.id
@@ -650,7 +656,9 @@ begin
       from wmg_card_runs cr
       join wmg_card_players cp on cp.run_id = cr.id
       where cr.room = l_room
-        and wmg_verification_engine.match_player(cp.player) = p_player_id
+        and (cp.player_id = p_player_id 
+         or (cp.player_id is null and wmg_verification_engine.match_player(cp.player) = p_player_id)
+        )
         and wmg_leaderboard_util.get_course(cr.course) = c.course_id
         fetch first row only; -- just in case
 
@@ -673,7 +681,14 @@ begin
       update wmg_card_players
          set verification_status = l_compare_result.verification_status
            , mismatch_details = l_compare_result.mismatch_details
+           , pending_flag = null
        where id = l_card_player_id;
+
+      update wmg_rounds r
+         set r.verification_status = l_compare_result.verification_status
+       where r.players_id = p_player_id
+         and r.course_id = c.course_id
+         and r.tournament_session_id = p_tournament_session_id;
 
   end loop;
 
@@ -708,6 +723,18 @@ begin
 
   if l_result.verification_status = 'SUCCESS' then
     log('.. Player verification SUCCESSFUL for ' || l_player_name, l_scope);
+
+    -- Card is ready for purging if no other players are pending
+    update wmg_card_runs r
+        set r.purge_ready_flag = 'Y'
+     where r.id = l_card_run_id
+       and not exists (
+         select 1
+           from wmg_card_players p
+          where p.run_id = r.id
+            and p.pending_flag = 'Y'
+       );
+
   else
     log('.. Player verification FAILED for ' || l_player_name || ': ' || l_result.mismatch_details, l_scope);
   end if;
@@ -719,7 +746,7 @@ begin
   
 exception
   when others then
-    log('Error verifying player: ' || sqlerrm, l_scope);
+    logger.log_error('Error verifying player: ' || l_player_name, l_scope);
     
     l_result.tournament_session_id := p_tournament_session_id;
     l_result.room_no := l_room;

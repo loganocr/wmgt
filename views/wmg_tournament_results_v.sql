@@ -13,6 +13,8 @@ select week
      , easy_scorecard
      , hard_scorecard
      , total_scorecard
+     , easy_verification_status
+     , hard_verification_status
 from (
   select week
   , player_id 
@@ -26,6 +28,8 @@ from (
   , easy_scorecard
   , hard_scorecard
   , easy_scorecard + hard_scorecard total_scorecard
+  , easy_verification_status
+  , hard_verification_status
   from (
     select r.week
          , r.player_id
@@ -34,6 +38,7 @@ from (
          , r.scorecard_total
          , tc.course_no
          , r.round_id
+         , r.verification_status
          , r.created_on
       from wmg_rounds_v r
          , wmg_courses c
@@ -46,6 +51,7 @@ from (
       sum(under_par) par, sum(scorecard_total) scorecard
     , max(round_id) round_id 
     , max(created_on) created_on 
+    , max(verification_status) verification_status
     for course_no in (
       1 EASY, 2 HARD
      )
