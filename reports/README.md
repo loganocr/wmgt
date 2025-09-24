@@ -1,0 +1,103 @@
+# WMGT Course Analysis Reports
+
+This directory contains templates, queries, and reference materials for generating consistent weekly course analysis reports.
+
+## Files Overview
+
+### Templates & Workflows
+- **`course_analysis_template.md`** - Master template with placeholders for weekly reports
+- **`course_analysis_workflow.md`** - Step-by-step process for creating reports
+- **`difficulty_tier_reference.md`** - Guide for consistent difficulty tier language
+
+### SQL Queries
+- **`course_analysis_queries.sql`** - All SQL queries needed for data gathering
+
+### Generated Reports
+- **`S##W##_Course_Analysis_Report.md`** - Weekly course analysis reports
+- Example: `S18W03_Course_Analysis_Report.md`
+
+### Legacy Files
+- `generate_weekly_report.sql`
+- `simple_weekly_prompt.md`
+- `weekly_analysis_prompt_template.md`
+- `weekly_report_automation.md`
+- `weekly_tournament_analysis.sql`
+- `weekly-report-prompt.md`
+
+## Quick Start
+
+1. **Connect to database**: `mcp_sqlcl_connect wmgt`
+2. **Follow workflow**: Use `course_analysis_workflow.md` step-by-step
+3. **Run queries**: Execute queries from `course_analysis_queries.sql`
+4. **Use template**: Fill in `course_analysis_template.md` with data
+5. **Reference guide**: Use `difficulty_tier_reference.md` for consistent language
+
+## Key Features
+
+### Accurate Difficulty Rankings
+- Easy courses ranked 1-35 within easy category
+- Hard courses ranked 1-35 within hard category
+- No more comparing easy courses to hard courses!
+
+### Consistent Language
+- Standardized difficulty tier descriptions
+- Appropriate comparison language for each tier
+- Strategic insights matched to difficulty level
+
+### Complete Data Coverage
+- Course records and top performers
+- Hole-by-hole difficulty analysis
+- Historical context and release information
+- Unicorn achievement tracking
+- Strategic preparation advice
+
+### Repeatable Process
+- Template-driven approach
+- Standardized SQL queries
+- Clear workflow documentation
+- Quality check guidelines
+
+## Usage Example
+
+```bash
+# 1. Connect to database
+mcp_sqlcl_connect wmgt
+
+# 2. Get current tournament week
+# Run query #1 from course_analysis_queries.sql
+
+# 3. Get tournament courses for that week
+# Update and run query #2
+
+# 4. Gather all course data
+# Run queries #3-11 with updated course codes
+
+# 5. Use template and reference guide
+# Fill in course_analysis_template.md
+# Reference difficulty_tier_reference.md for language
+
+# 6. Save as S##W##_Course_Analysis_Report.md
+```
+
+## Quality Standards
+
+Every report should include:
+- ✅ Accurate within-category difficulty rankings
+- ✅ Appropriate difficulty tier language
+- ✅ Course records and top performers
+- ✅ Hole-by-hole analysis (hardest/easiest)
+- ✅ Strategic insights and preparation tips
+- ✅ Unicorn opportunity information
+- ✅ Historical context and course facts
+- ✅ Engaging format with emojis and clear structure
+
+## Maintenance
+
+- Update queries if database schema changes
+- Add new difficulty tiers if course distribution changes
+- Refresh reference examples as new courses are added
+- Archive old reports to maintain directory organization
+
+---
+
+*For questions or improvements to this system, update the relevant template or reference file and document changes in this README.*
