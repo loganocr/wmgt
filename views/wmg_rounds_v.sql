@@ -3,7 +3,7 @@ as
 select 
     p.id                                         player_id,
     p.account                                    account,
-    case when m.banned_flag is null then nvl(p.name, p.account) else '-redacted-' end player_name,
+    case when m.banned_flag is null then nvl(p.name, p.account) else 'someone' end player_name,
     p.rank_code,
     p.country_code,
     c.id                                         course_id,
