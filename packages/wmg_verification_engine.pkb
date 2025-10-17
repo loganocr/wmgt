@@ -655,7 +655,8 @@ begin
          , l_card_player_id
       from wmg_card_runs cr
       join wmg_card_players cp on cp.run_id = cr.id
-      where cr.room = l_room
+      where cr.channel_id = '1235326643401134122'
+        and cr.room = l_room
         and (cp.player_id = p_player_id 
          or (cp.player_id is null and wmg_verification_engine.match_player(cp.player) = p_player_id)
         )
