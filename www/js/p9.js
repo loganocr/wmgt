@@ -88,6 +88,63 @@ function roundTotal() {
            );
   }, self);
 
+  self.carnivalPoints = ko.computed(function() {
+    var holes = [
+      [self.s1, self.par1],
+      [self.s2, self.par2],
+      [self.s3, self.par3],
+      [self.s4, self.par4],
+      [self.s5, self.par5],
+      [self.s6, self.par6],
+      [self.s7, self.par7],
+      [self.s8, self.par8],
+      [self.s9, self.par9],
+      [self.s10, self.par10],
+      [self.s11, self.par11],
+      [self.s12, self.par12],
+      [self.s13, self.par13],
+      [self.s14, self.par14],
+      [self.s15, self.par15],
+      [self.s16, self.par16],
+      [self.s17, self.par17],
+      [self.s18, self.par18]
+    ];
+
+    function carnivalScore(strokesObs, parObs) {
+      var strokes = wmgt.convert.to_number(strokesObs());
+      var par = wmgt.convert.to_number(parObs());
+
+      if (strokes <= 0 || par <= 0) {
+        return 0;
+      }
+
+      if (strokes === 1) {
+        return 5;
+      }
+
+      var diff = par - strokes;
+
+      if (diff === 4) {
+        return 4;
+      }
+      if (diff === 3) {
+        return 3;
+      }
+      if (diff === 2) {
+        return 2;
+      }
+      if (diff === 1) {
+        return 1;
+      }
+
+      return 0;
+    }
+
+    return holes.reduce(function(total, entry) {
+      return total + carnivalScore(entry[0], entry[1]);
+    }, 0);
+  }, self);
+
   self.submissionMatches = ko.computed(function() {
     if (!!self.scoreOverride() || self.s18().length == 0 || self.score().length == 0 || $v("P9_ID").length == 0) {
         return false;
@@ -133,5 +190,4 @@ function viewH(el) {
 function qhide(pID) {
   $("[data-id=" + pID + "]").parents("tr").slideUp();
 }
-
 
