@@ -361,6 +361,8 @@ begin
             union all
             select '02' slot, 0 day_offset from dual
             union all
+            select '06' slot, 0 day_offset from dual
+            union all
             select '18' slot, 0 day_offset from dual
         )
     )
@@ -2714,6 +2716,8 @@ begin
             select '22' slot, -1 day_offset from dual
             union all
             select '02' slot, 0 day_offset from dual
+            union all
+            select '06' slot, 0 day_offset from dual
             union all
             select '18' slot, 0 day_offset from dual
         )
