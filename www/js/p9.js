@@ -50,6 +50,27 @@ function roundTotal() {
   self.par17 = ko.observable(0);
   self.par18 = ko.observable(0);
 
+  var carnivalHoles = [
+    { strokes: self.s1, par: self.par1 },
+    { strokes: self.s2, par: self.par2 },
+    { strokes: self.s3, par: self.par3 },
+    { strokes: self.s4, par: self.par4 },
+    { strokes: self.s5, par: self.par5 },
+    { strokes: self.s6, par: self.par6 },
+    { strokes: self.s7, par: self.par7 },
+    { strokes: self.s8, par: self.par8 },
+    { strokes: self.s9, par: self.par9 },
+    { strokes: self.s10, par: self.par10 },
+    { strokes: self.s11, par: self.par11 },
+    { strokes: self.s12, par: self.par12 },
+    { strokes: self.s13, par: self.par13 },
+    { strokes: self.s14, par: self.par14 },
+    { strokes: self.s15, par: self.par15 },
+    { strokes: self.s16, par: self.par16 },
+    { strokes: self.s17, par: self.par17 },
+    { strokes: self.s18, par: self.par18 }
+  ];
+
   self.par = ko.observable(0);
   self.scoreOverride = ko.observable(0);
   self.overrideOn = ko.computed(function() {
@@ -88,61 +109,56 @@ function roundTotal() {
            );
   }, self);
 
-  self.carnivalPoints = ko.computed(function() {
-    var holes = [
-      [self.s1, self.par1],
-      [self.s2, self.par2],
-      [self.s3, self.par3],
-      [self.s4, self.par4],
-      [self.s5, self.par5],
-      [self.s6, self.par6],
-      [self.s7, self.par7],
-      [self.s8, self.par8],
-      [self.s9, self.par9],
-      [self.s10, self.par10],
-      [self.s11, self.par11],
-      [self.s12, self.par12],
-      [self.s13, self.par13],
-      [self.s14, self.par14],
-      [self.s15, self.par15],
-      [self.s16, self.par16],
-      [self.s17, self.par17],
-      [self.s18, self.par18]
-    ];
+  function carnivalSummary(strokesObs, parObs) {
+    var strokes = wmgt.convert.to_number(strokesObs());
+    var par = wmgt.convert.to_number(parObs());
 
-    function carnivalScore(strokesObs, parObs) {
-      var strokes = wmgt.convert.to_number(strokesObs());
-      var par = wmgt.convert.to_number(parObs());
-
-      if (strokes <= 0 || par <= 0) {
-        return 0;
-      }
-
-      if (strokes === 1) {
-        return 5;
-      }
-
-      var diff = par - strokes;
-
-      if (diff === 4) {
-        return 4;
-      }
-      if (diff === 3) {
-        return 3;
-      }
-      if (diff === 2) {
-        return 2;
-      }
-      if (diff === 1) {
-        return 1;
-      }
-
-      return 0;
+    if (strokes <= 0 || par <= 0) {
+      return { points: 0, label: "" };
     }
 
-    return holes.reduce(function(total, entry) {
-      return total + carnivalScore(entry[0], entry[1]);
+    if (strokes === 1) {
+      return { points: 5, label: "Hole In One" };
+    }
+
+    var diff = par - strokes;
+
+    if (diff === 4) {
+      return { points: 4, label: "Condor" };
+    }
+    if (diff === 3) {
+      return { points: 3, label: "Albatross" };
+    }
+    if (diff === 2) {
+      return { points: 2, label: "Eagle" };
+    }
+    if (diff === 1) {
+      return { points: 1, label: "Birdie" };
+    }
+
+    return { points: 0, label: "" };
+  }
+
+  self.carnivalPoints = ko.computed(function() {
+    return carnivalHoles.reduce(function(total, hole) {
+      return total + carnivalSummary(hole.strokes, hole.par).points;
     }, 0);
+  }, self);
+
+  self.carnivalLog = ko.computed(function() {
+    var entries = carnivalHoles.map(function(hole, index) {
+      var summary = carnivalSummary(hole.strokes, hole.par);
+
+      if (summary.points <= 0) {
+        return null;
+      }
+
+      return "Hole " + (index + 1) + ": " + summary.label + " (" + summary.points + " points)";
+    }).filter(function(entry) {
+      return !!entry;
+    });
+
+    return entries.join("\n");
   }, self);
 
   self.submissionMatches = ko.computed(function() {
@@ -190,4 +206,3 @@ function viewH(el) {
 function qhide(pID) {
   $("[data-id=" + pID + "]").parents("tr").slideUp();
 }
-
