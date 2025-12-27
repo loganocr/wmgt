@@ -9,6 +9,7 @@ with courses as (
          , c.course_emoji
          , c.release_order
          , tc.course_no
+         , c.course_group
     from wmg_tournament_courses tc
        , wmg_courses c
    where tc.course_id = c.id (+)
@@ -35,11 +36,13 @@ select t.id                              tournament_id
      , ts.completed_ind                  completed_ind
      , ts.completed_on                   completed_on
      , e.course_id                       easy_course_id
+     , e.course_group                    easy_course_group
      , e.code                            easy_course_code
      , e.name                            easy_course_name
      , e.course_emoji                    easy_course_emoji
      , e.release_order                   easy_release_order
      , h.course_id                       hard_course_id
+     , h.course_group                    hard_course_group
      , h.code                            hard_course_code
      , h.name                            hard_course_name
      , h.course_emoji                    hard_course_emoji

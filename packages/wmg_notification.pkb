@@ -990,6 +990,7 @@ is
 
   l_subject varchar2( 4000 );
   l_placeholders varchar2( 4000 );
+  l_courses varchar2( 4000 );
   l_html    clob;
   l_text    clob;
 
@@ -1010,9 +1011,11 @@ begin
          and p.active_ind = 'Y'
     )
     select prefix_tournament, round_num, week, session_date
-         , easy_course_name
-         , hard_course_name
+         , easy_course_group
          , easy_course_code
+         , easy_course_name
+         , hard_course_group
+         , hard_course_name
          , hard_course_code
          , '' "NULL"
          , (select listagg('@'||p.account || '     **' || p.total_score || '**', chr(13)||chr(10))
@@ -1138,9 +1141,17 @@ begin
     log('.. WEEK_NUM:' || new_session.round_num, l_scope);
     log('.. FIRST_PLACE:' || new_session.first_place, l_scope);
 
+    l_courses := new_session.easy_course_name
+      || case when new_session.easy_course_group = new_session.hard_course_group then
+          null -- we're done, the easy and hard match
+         else
+           ' ' || chr(38) || new_session.hard_course_name
+         end;
+        
     l_placeholders := '{' ||
         '    "SEASON":'           || apex_json.stringify( new_session.prefix_tournament ) ||
         '   ,"WEEK_NUM":'         || apex_json.stringify( new_session.round_num ) ||
+        '   ,"COURSES_NAME":'     || apex_json.stringify( l_courses ) ||
         '   ,"FIRST_PLACE":'      || apex_json.stringify( new_session.first_place ) ||
         '   ,"SECOND_PLACE":'     || apex_json.stringify( new_session.second_place ) ||
         '   ,"THIRD_PLACE":'      || apex_json.stringify( new_session.third_place ) ||
@@ -1151,8 +1162,10 @@ begin
         '   ,"DIAMOND_PLAYERS":'  || apex_json.stringify( new_session.diamond_players  ) ||
         '   ,"COCONUT_PLAYERS":'  || apex_json.stringify( new_session.coconut_players  ) ||
         '   ,"EASY_CODE":'        || apex_json.stringify( new_session.easy_course_code ) ||
+        '   ,"EASY_COURSE":'      || apex_json.stringify( new_session.easy_course_name ) ||
         '   ,"EASY_TOP_PLAYERS":' || apex_json.stringify( new_session.easy_top_players ) ||
         '   ,"HARD_CODE":'        || apex_json.stringify( new_session.hard_course_code ) ||
+        '   ,"HARD_COURSE":'      || apex_json.stringify( new_session.hard_course_name ) ||
         '   ,"HARD_TOP_PLAYERS":' || apex_json.stringify( new_session.hard_top_players ) ||
         '}';
 
