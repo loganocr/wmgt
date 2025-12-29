@@ -19,6 +19,8 @@ PRO .. wmg_ranks.sql
 @wmg_ranks.sql
 PRO .. wmg_players.sql
 @wmg_players.sql
+PRO .. wmg_player_rank_history.sql
+@wmg_player_rank_history.sql
 PRO .. wmg_tournaments.sql
 @wmg_tournaments.sql
 PRO .. wmg_tournament_sessions.sql
