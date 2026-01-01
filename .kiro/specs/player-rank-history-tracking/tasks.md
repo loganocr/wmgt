@@ -35,8 +35,8 @@ This implementation plan creates a comprehensive player rank history tracking sy
     - Test error handling scenarios
     - _Requirements: 4.1, 4.2, 4.4_
 
-- [ ] 3. Create historical rank lookup functions
-  - [ ] 3.1 Implement get_player_rank_at_time function
+- [x] 3. Create historical rank lookup functions
+  - [x] 3.1 Implement get_player_rank_at_time function
     - Accept player_id and timestamp parameters
     - Return effective rank at specified time
     - Handle NEW status and fallback scenarios
@@ -47,7 +47,7 @@ This implementation plan creates a comprehensive player rank history tracking sy
     - **Property 4: Fallback Rank Behavior**
     - **Validates: Requirements 2.1, 2.2, 2.3, 2.4**
 
-  - [ ] 3.3 Implement batch lookup function for rounds
+  - [x] 3.3 Implement batch lookup function for rounds
     - Create get_rounds_with_historical_ranks function
     - Support efficient batch processing
     - Return consistent results for multiple rounds

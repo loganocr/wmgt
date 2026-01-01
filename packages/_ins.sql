@@ -6,6 +6,8 @@
 @wmg_error_handler.pkb
 @wmg_notification.pks
 @wmg_notification.pkb
+@wmg_rank_history.pks
+@wmg_rank_history.pkb
 @wmg_rest_api.pks
 @wmg_rest_api.pkb
 @wmg_util.pks
