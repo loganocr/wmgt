@@ -43,7 +43,6 @@ create table wmg_player_rank_history (
   , change_type           varchar2(20) not null -- 'AUTOMATIC', 'MANUAL', 'INITIAL', 'SEASON_END', 'MIDSEASON'
   , changed_by            varchar2(60) not null
   , tournament_session_id number -- references wmg_tournament_sessions.id for context
-  , checkpoint_type       varchar2(20) -- 'END_SEASON', 'WEEK_6', 'WEEK_12'
   , created_on            timestamp with local time zone default current_timestamp
   , created_by            varchar2(60) default user
   , constraint wmg_player_rank_hist_fk1 foreign key (player_id) references wmg_players(id)
@@ -126,7 +125,7 @@ The system will implement a comprehensive historical seeding approach based on a
 - **Baseline Establishment**: Use Season 16 final standings as the first historical rank for all participating players
 - **Rank Assignment**: Apply final season rankings based on total points accumulated
 - **Timestamp**: Use Season 16 tournament close date as the change timestamp
-- **Change Type**: 'SEASON_END' with tournament_session_id referencing the Season 16 session and checkpoint_type 'END_SEASON'
+- **Change Type**: 'SEASON_END' with tournament_session_id referencing the Season 16 session
 
 #### Season 17 Checkpoint Seeding
 - **Week 6 Checkpoint**: Apply mid-season promotions and relegations based on point thresholds
@@ -161,7 +160,6 @@ PlayerRankHistory {
     change_type: enum('AUTOMATIC', 'MANUAL', 'INITIAL', 'SEASON_END', 'MIDSEASON')
     changed_by: varchar2(60) (User who made the change)
     tournament_session_id: number (Foreign Key to wmg_tournament_sessions.id)
-    checkpoint_type: varchar2(20) (e.g., 'END_SEASON', 'WEEK_6', 'WEEK_12')
     created_on: timestamp with local time zone
     created_by: varchar2(60)
 }
