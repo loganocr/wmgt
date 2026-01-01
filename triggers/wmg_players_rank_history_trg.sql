@@ -6,10 +6,16 @@ create or replace trigger wmg_players_rank_history_trg
     for each row
     when (old.rank_code != new.rank_code)
 declare
-    l_change_type varchar2(20) := 'AUTOMATIC';
-    l_changed_by varchar2(60);
+    l_change_type wmg_player_rank_history.change_type%type := 'AUTOMATIC';
+    l_changed_by wmg_player_rank_history.changed_by%type;
+    l_change_timestamp wmg_player_rank_history.change_timestamp%type := current_timestamp;
     l_error_msg varchar2(4000);
 begin
+
+    if wmg_rank_history.g_historical_override then
+      l_change_timestamp := wmg_rank_history.g_change_timestamp;  -- we're doing an historical override so use the override timestamp
+    end if;
+      
     -- Determine who made the change
     l_changed_by := coalesce(
                         sys_context('APEX$SESSION','app_user')
@@ -37,7 +43,7 @@ begin
         :new.id        -- player_id
       , :old.rank_code
       , :new.rank_code
-      , current_timestamp
+      , l_change_timestamp
       , l_change_type
       , l_changed_by
       , case 

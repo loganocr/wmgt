@@ -19,6 +19,9 @@ type rec_round_rank_type is record(
 
 type tab_round_rank_type is table of rec_round_rank_type;
 
+g_historical_override boolean := false;
+g_change_timestamp    wmg_player_rank_history.change_timestamp%type;
+
 --------------------------------------------------------------------------------
 -- Get the effective rank for a player at a specific point in time
 --------------------------------------------------------------------------------
