@@ -1,4 +1,4 @@
-create or replace view wmg_new_player_progression_v
+create or replace force view wmg_new_player_progression_v
 as
 select p.id as player_id
      , p.name as player_name
@@ -7,6 +7,7 @@ select p.id as player_id
      , r.name as rank_name
      , r.display_seq as rank_display_seq
      , r.profile_class as rank_profile_class
+     , r.list_class as rank_list_class
      , p.created_on as registration_date
      , null as end_date
      , extract(day from (current_timestamp - p.created_on)) as days_since_registration
@@ -14,7 +15,7 @@ select p.id as player_id
      , 'NEW' as change_type
      , p.created_by as registered_by
      , null as tournament_session_id
-     , null as tournament_session_name
+     , null as tournament_session_week
      , 1 as rank_sequence
      , 'Y' as is_current_rank
      -- Audit information
@@ -27,7 +28,7 @@ select p.id as player_id
            from wmg_rounds rd
              join wmg_tournament_players tp on rd.players_id = tp.player_id
            where tp.player_id = p.id
-             and rd.total_strokes is not null
+             and tp.total_score is not null
          ) then 'Y'
          else 'N'
        end as has_completed_tournament
@@ -40,7 +41,7 @@ where p.rank_code = 'NEW'
     from wmg_rounds rd
       join wmg_tournament_players tp on rd.players_id = tp.player_id
     where tp.player_id = p.id
-      and rd.total_strokes is not null
+      and tp.total_score is not null
   )
 order by p.created_on desc
 /

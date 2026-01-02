@@ -10,6 +10,7 @@ select player_id
      , rank_name
      , rank_display_seq
      , rank_profile_class
+     , rank_list_class
      , start_date
      , end_date
      , duration_days
@@ -17,7 +18,7 @@ select player_id
      , change_type
      , changed_by
      , tournament_session_id
-     , tournament_session_name
+     , tournament_session_week
      , rank_sequence
      , is_current_rank
      , change_timestamp
@@ -35,6 +36,7 @@ select player_id
      , rank_name
      , rank_display_seq
      , rank_profile_class
+     , rank_list_class
      , registration_date as start_date
      , end_date
      , days_since_registration as duration_days
@@ -42,15 +44,15 @@ select player_id
      , change_type
      , registered_by as changed_by
      , tournament_session_id
-     , tournament_session_name
+     , tournament_session_week
      , rank_sequence
      , is_current_rank
      , change_timestamp
      , change_type_display
      , 'NEW_PLAYER' as progression_type
 from wmg_new_player_progression_v
-
 order by player_id, rank_sequence
 /
+show errors
 
 comment on table wmg_complete_player_progression_v is 'Complete player progression view including both active rank history and NEW player display logic';

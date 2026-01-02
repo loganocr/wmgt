@@ -1,4 +1,4 @@
-create or replace view wmg_player_rank_progression_v
+create or replace force view wmg_player_rank_progression_v
 as
 with rank_timeline as (
   -- Historical rank changes (excluding NEW status unless specifically needed)
@@ -64,6 +64,7 @@ select rt.player_id
      , r.name as rank_name
      , r.display_seq as rank_display_seq
      , r.profile_class as rank_profile_class
+     , r.list_class as rank_list_class
      , rt.start_date
      , rt.end_date
      , case 
