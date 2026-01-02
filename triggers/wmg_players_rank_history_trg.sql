@@ -13,7 +13,8 @@ declare
 begin
 
     if wmg_rank_history.g_historical_override then
-      l_change_timestamp := wmg_rank_history.g_change_timestamp;  -- we're doing an historical override so use the override timestamp
+      logger.log('exiting wmg_players_rank_history_trg with g_historical_override=true', 'wmg_players_rank_history_trg');
+      return;  -- we're doing an historical override so exit because it's all controlled
     end if;
       
     -- Determine who made the change
