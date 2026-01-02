@@ -1206,6 +1206,10 @@ begin
   -- logger.append_param(l_params, 'p_tournament_session_id', p_tournament_session_id);
   log('BEGIN', l_scope);
 
+  $IF env.wmgt $THEN
+  wmg_rank_history.g_tournament_session_id := p_tournament_session_id; -- set trigger parameter
+  $END
+
   log('.. Advance all players that played from NEW to Amateur', l_scope);
   update wmg_players
      set rank_code = 'AMA'
