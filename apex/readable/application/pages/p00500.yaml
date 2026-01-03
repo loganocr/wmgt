@@ -2558,6 +2558,48 @@ regions:
       output-as: HTML
       expand-shortcuts: false
 
+- # ====== Region: Voting Options ==============================
+  id: 114537863505710408
+  identification: 
+    name: Voting Options
+    type: Static Content
+
+  layout: 
+    sequence: 100
+    parent-region: Current  Session # 56178155412404412208
+    slot: SUB_REGIONS
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  configuration: 
+    build-option: 'Feature: Course Voting' # 74226408207696862
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
 - # ====== Region: About & Rules ===============================
   id: 50437967039206816774
   identification: 
@@ -3518,6 +3560,176 @@ page-items:
     store-value-encrypted-in-session-state: true
     restricted-characters: All characters can be saved.
 
+- # ====== Page Item: P500_VOTING_AVAILABLE_EASY ===============
+  id: 114537981529710409
+  identification: 
+    name: P500_VOTING_AVAILABLE_EASY
+    type: Select Many
+
+  label: 
+    label: Restrict Easy Courses To
+    alignment: Left
+
+  settings: 
+    fetch-on-search: true
+    use-cache: true
+    use-defaults: true
+
+  search: 
+    match-type: Contains
+    case-sensitive: false
+    minimum-characters: 0
+
+  multiple-values: 
+    type: Delimited List
+    separator: ':'
+
+  layout: 
+    sequence: 10
+    region: Voting Options # 114537863505710408
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: SQL Query
+    sql-query: |
+      select prepared_name, code
+      from wmg_courses_v
+      where course_mode = 'E'
+        and course_id in (
+        select id
+          from wmg_courses
+        minus
+        select easy_course_id
+          from wmg_tournament_sessions_v s
+         where s.tournament_id in (
+              select id
+                from wmg_tournaments
+               where current_flag = 'Y'
+          )
+      )
+      order by prepared_name
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Function Body
+    language: PL/SQL
+    pl/sql-function-body: return wmg_util.get_param('VOTING_AVAILABLE_EASY');
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+  help: 
+    help-text: When voting is enabled, all voting will be restricted to just the selected courses.
+
+- # ====== Page Item: P500_VOTING_AVAILABLE_HARD ===============
+  id: 114538098193710410
+  identification: 
+    name: P500_VOTING_AVAILABLE_HARD
+    type: Select Many
+
+  label: 
+    label: Restrict Hard Courses To
+    alignment: Left
+
+  settings: 
+    fetch-on-search: true
+    use-cache: true
+    use-defaults: true
+
+  search: 
+    match-type: Contains
+    case-sensitive: false
+    minimum-characters: 0
+
+  multiple-values: 
+    type: Delimited List
+    separator: ':'
+
+  layout: 
+    sequence: 20
+    region: Voting Options # 114537863505710408
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Floating
+    template-options: 
+    - '#DEFAULT#'
+    width: 30
+
+  validation: 
+    value-required: false
+
+  list-of-values: 
+    type: SQL Query
+    sql-query: |
+      select prepared_name, code
+      from wmg_courses_v
+      where course_mode = 'H'
+        and course_id in (
+        select id
+          from wmg_courses
+        minus
+        select hard_course_id
+          from wmg_tournament_sessions_v s
+         where s.tournament_id in (
+              select id
+                from wmg_tournaments
+               where current_flag = 'Y'
+          )
+      )
+      order by prepared_name
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Function Body
+    language: PL/SQL
+    pl/sql-function-body: return wmg_util.get_param('VOTING_AVAILABLE_HARD');
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+  help: 
+    help-text: When voting is enabled, all voting will be restricted to just the selected courses.
+
 buttons: 
 - # ====== Button: UPLOAD ======================================
   id: 480490081587235
@@ -3792,6 +4004,36 @@ buttons:
 
     warn-on-unsaved-changes: Do Not Check
 
+- # ====== Button: SAVE_VOTING_COURSES =========================
+  id: 114538119973710411
+  identification: 
+    button-name: SAVE_VOTING_COURSES
+    label: Save  Courses
+
+  layout: 
+    sequence: 30
+    region: Voting Options # 114537863505710408
+    slot: CHANGE
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconLeft
+    icon: fa-check
+
+  behavior: 
+    action: Submit Page
+    execute-validations: true
+    show-processing: false
+    warn-on-unsaved-changes: Do Not Check
+
 - # ====== Button: VIEW ========================================
   id: 50437967169044816775
   identification: 
@@ -4037,4 +4279,33 @@ computations:
         from WMG_TOURNAMENTS
         where CURRENT_FLAG = 'Y'
       
+
+processes: 
+- # ====== Process: Save Voting Courses ========================
+  id: 114538278100710412
+  identification: 
+    name: Save Voting Courses
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |2
+       wmg_util.set_param('VOTING_AVAILABLE_EASY', :P500_VOTING_AVAILABLE_EASY );
+       wmg_util.set_param('VOTING_AVAILABLE_HARD', :P500_VOTING_AVAILABLE_HARD );
+
+  execution: 
+    sequence: 10
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  success-message: 
+    success-message: Restricted list of courses saved.
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    when-button-pressed: SAVE_VOTING_COURSES # 114538119973710411
 
