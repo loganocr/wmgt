@@ -60,8 +60,8 @@ This implementation plan creates a comprehensive player rank history tracking sy
 - [x] 4. Checkpoint - Ensure core functionality works
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Create rank progression views and queries
-  - [ ] 5.1 Create wmg_player_rank_progression_v view
+- [-] 5. Create rank progression views and queries
+  - [x] 5.1 Create wmg_player_rank_progression_v view
     - Combine current and historical rank data
     - Calculate duration in each rank
     - Include audit information
@@ -95,8 +95,8 @@ This implementation plan creates a comprehensive player rank history tracking sy
     - **Property 13: Reason Persistence**
     - **Validates: Requirements 6.1, 6.2, 6.3, 6.4, 6.5**
 
-- [ ] 7. Create historical data seeding functions
-  - [ ] 7.1 Implement seed_historical_ranks_from_session function
+- [x] 7. Create historical data seeding functions
+  - [x] 7.1 Implement seed_historical_ranks_from_session function
     - Calculate ranks based on tournament session performance
     - Apply promotion/relegation rules
     - Handle Season 16, 17, 18 seeding scenarios
@@ -106,7 +106,7 @@ This implementation plan creates a comprehensive player rank history tracking sy
     - **Property 18: Historical Seeding Accuracy**
     - **Validates: Requirements 4.6**
 
-  - [ ] 7.3 Create checkpoint-specific seeding functions
+  - [x] 7.3 Create checkpoint-specific seeding functions
     - Implement week 6 promotion/relegation logic
     - Implement end-of-season ranking logic
     - Support automatic promotion rules (Top 3/10/25)
