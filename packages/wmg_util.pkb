@@ -2131,6 +2131,8 @@ procedure cast_player_vote(
 is
   l_scope  logger_logs.scope%type := gc_scope_prefix || 'cast_player_vote';
   l_params logger.tab_param;
+
+  l_valid_course number := 0;
 begin
   logger.append_param(l_params, 'p_player_id', p_player_id);
   logger.append_param(l_params, 'p_course_code', p_course_code);
@@ -2146,6 +2148,26 @@ begin
   else
     raise_application_error(-20000, 'Can only vote +1 or -1');
   end if;
+
+  /*
+  Restricted Easy courses are specified in VOTING_AVAILABLE_EASY and hard in VOTING_AVAILABLE_HARD.
+  Only courses in that list can be voted on.
+  However, if those lists are empty, then all courses are allowed.
+  */
+  select 1
+    into l_valid_course
+    from dual
+   where p_course_code in (
+        -- protect agains unauthorized courses
+        select column_value from apex_string.split(wmg_util.get_param('VOTING_AVAILABLE_EASY'), ':')
+        union
+        select code from wmg_courses where course_mode = 'E' and wmg_util.get_param('VOTING_AVAILABLE_EASY') is null
+        union
+        select column_value from apex_string.split(wmg_util.get_param('VOTING_AVAILABLE_HARD'), ':')
+        union
+        select code from wmg_courses where course_mode = 'E' and wmg_util.get_param('VOTING_AVAILABLE_HARD') is null
+    );
+
 
   merge into wmg_course_vote v
   using (
@@ -2170,6 +2192,10 @@ begin
   logger.log('END', l_scope, null, l_params);
 
   exception
+    when NO_DATA_FOUND then
+      logger.log_error('Invalid course: ' || p_course_code || ' selected by player_id ' || p_player_id, l_scope, null, l_params);
+      raise_application_error(-20000, 'Invalid course selection "' || p_course_code || '"');
+
     when OTHERS then
       logger.log_error('Unhandled Exception', l_scope, null, l_params);
       -- x_result_status := mm_api.g_ret_sts_unexp_error;
