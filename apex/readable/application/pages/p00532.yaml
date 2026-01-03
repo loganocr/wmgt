@@ -167,7 +167,7 @@ regions:
     - P532_EASY_COURSE_ID
 
   layout: 
-    sequence: 120
+    sequence: 140
     parent-region: Tournament Sessions # 56158045789158236792
     slot: BODY
     start-new-layout: false
@@ -413,7 +413,7 @@ regions:
     - P532_HARD_COURSE_ID
 
   layout: 
-    sequence: 130
+    sequence: 150
     parent-region: Tournament Sessions # 56158045789158236792
     slot: BODY
     start-new-layout: false
@@ -629,7 +629,7 @@ regions:
     sql-query: |
       select v.*
       from (
-          select course
+          select course_id, course
                , sum(decode(vote, -1, 1, 0)) nay
                , sum(decode(vote, 1, 1, 0)) yay
                , count(*) total_votes
@@ -637,13 +637,13 @@ regions:
                , rank() over (order by sum(vote) desc) rn
           from wmg_course_vote_v
           where course_mode = 'E'
-          group by course
+          group by course_id, course
       ) v
       where rn  = 1
       
 
   layout: 
-    sequence: 100
+    sequence: 120
     parent-region: Tournament Sessions # 56158045789158236792
     slot: BODY
     start-new-layout: false
@@ -678,6 +678,9 @@ regions:
 
   customization: 
     customizable: Not Customizable By End Users
+
+  configuration: 
+    build-option: 'Feature: Course Voting' # 74226408207696862
 
   attributes: 
     layout: 
@@ -730,7 +733,7 @@ regions:
       alignment: start
 
     layout: 
-      sequence: 10
+      sequence: 20
       column-alignment: start
 
     accessibility: 
@@ -758,7 +761,7 @@ regions:
       type: Hidden
 
     layout: 
-      sequence: 20
+      sequence: 30
 
     ui-defaults-reference: 
       table-owner: Parsing Schema
@@ -773,7 +776,7 @@ regions:
       type: Hidden
 
     layout: 
-      sequence: 30
+      sequence: 40
 
     ui-defaults-reference: 
       table-owner: Parsing Schema
@@ -788,7 +791,7 @@ regions:
       type: Hidden
 
     layout: 
-      sequence: 40
+      sequence: 50
 
     ui-defaults-reference: 
       table-owner: Parsing Schema
@@ -807,7 +810,7 @@ regions:
       alignment: end
 
     layout: 
-      sequence: 50
+      sequence: 60
       column-alignment: end
 
     accessibility: 
@@ -838,7 +841,43 @@ regions:
       type: Hidden
 
     layout: 
-      sequence: 60
+      sequence: 70
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: COURSE_ID ===================================
+    id: 76131227820229813
+    identification: 
+      column-name: COURSE_ID
+      type: Link
+
+    heading: 
+      heading: Pick
+      alignment: center
+
+    layout: 
+      sequence: 10
+      column-alignment: center
+
+    accessibility: 
+      value-identifies-row: false
+
+    link: 
+      target: 'javascript:$s("P532_EASY_COURSE_ID", #COURSE_ID#);'
+      link-text: <i class="fa fa-circle-o " title="Pick"></i>
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
 
     ui-defaults-reference: 
       table-owner: Parsing Schema
@@ -858,7 +897,7 @@ regions:
     sql-query: |
       select v.*
       from (
-          select course
+          select course_id, course
                , sum(decode(vote, -1, 1, 0)) nay
                , sum(decode(vote, 1, 1, 0)) yay
                , count(*) total_votes
@@ -866,13 +905,13 @@ regions:
                , rank() over (order by sum(vote) desc) rn
           from wmg_course_vote_v
           where course_mode = 'H'
-          group by course
+          group by course_id, course
       ) v
       where rn  = 1
       
 
   layout: 
-    sequence: 110
+    sequence: 130
     parent-region: Tournament Sessions # 56158045789158236792
     slot: BODY
     start-new-layout: false
@@ -907,6 +946,9 @@ regions:
 
   customization: 
     customizable: Not Customizable By End Users
+
+  configuration: 
+    build-option: 'Feature: Course Voting' # 74226408207696862
 
   attributes: 
     layout: 
@@ -959,7 +1001,7 @@ regions:
       alignment: start
 
     layout: 
-      sequence: 10
+      sequence: 20
       column-alignment: start
 
     accessibility: 
@@ -987,7 +1029,7 @@ regions:
       type: Hidden
 
     layout: 
-      sequence: 20
+      sequence: 30
 
     ui-defaults-reference: 
       table-owner: Parsing Schema
@@ -1002,7 +1044,7 @@ regions:
       type: Hidden
 
     layout: 
-      sequence: 30
+      sequence: 40
 
     ui-defaults-reference: 
       table-owner: Parsing Schema
@@ -1017,7 +1059,7 @@ regions:
       type: Hidden
 
     layout: 
-      sequence: 40
+      sequence: 50
 
     ui-defaults-reference: 
       table-owner: Parsing Schema
@@ -1036,7 +1078,7 @@ regions:
       alignment: end
 
     layout: 
-      sequence: 50
+      sequence: 60
       column-alignment: end
 
     accessibility: 
@@ -1065,6 +1107,42 @@ regions:
     identification: 
       column-name: RN
       type: Hidden
+
+  - # ====== Column: COURSE_ID ===================================
+    id: 76131398653229814
+    identification: 
+      column-name: COURSE_ID
+      type: Link
+
+    heading: 
+      heading: Pick
+      alignment: center
+
+    layout: 
+      sequence: 10
+      column-alignment: center
+
+    accessibility: 
+      value-identifies-row: false
+
+    link: 
+      target: 'javascript:$s("P532_HARD_COURSE_ID", #COURSE_ID#);'
+      link-text: <i class="fa fa-circle-o " title="Pick"></i>
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
 
     layout: 
       sequence: 60
@@ -1589,6 +1667,57 @@ page-items:
     store-value-encrypted-in-session-state: true
     restricted-characters: All characters can be saved.
 
+- # ====== Page Item: P532_CLEAR_VOTES_FLAG ====================
+  id: 76131173023229812
+  identification: 
+    name: P532_CLEAR_VOTES_FLAG
+    type: Checkbox
+
+  label: 
+    label: Clear Votes?
+    alignment: Left
+
+  settings: 
+    use-defaults: true
+
+  layout: 
+    sequence: 10
+    region: Votes # 74129755168128012
+    slot: EDIT
+    alignment: Left
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+
+  validation: 
+    value-required: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+  configuration: 
+    build-option: 'Feature: Course Voting' # 74226408207696862
+
 - # ====== Page Item: P532_ROOMS_DEFINED_BY ====================
   id: 40389412453228769162
   identification: 
@@ -1651,7 +1780,7 @@ page-items:
     value-protected: true
 
   layout: 
-    sequence: 170
+    sequence: 190
     region: Tournament Sessions # 56158045789158236792
     slot: BODY
 
@@ -1748,7 +1877,7 @@ page-items:
     type: No
 
   layout: 
-    sequence: 80
+    sequence: 100
     region: Tournament Sessions # 56158045789158236792
     slot: BODY
     alignment: Left
@@ -1819,7 +1948,7 @@ page-items:
     type: No
 
   layout: 
-    sequence: 90
+    sequence: 110
     region: Tournament Sessions # 56158045789158236792
     slot: BODY
     alignment: Left
@@ -1976,7 +2105,7 @@ page-items:
     virtual-keyboard: Text
 
   layout: 
-    sequence: 50
+    sequence: 70
     region: Tournament Sessions # 56158045789158236792
     slot: BODY
     alignment: Left
@@ -2037,7 +2166,7 @@ page-items:
     use-defaults: true
 
   layout: 
-    sequence: 70
+    sequence: 90
     region: Tournament Sessions # 56158045789158236792
     slot: BODY
     alignment: Left
@@ -2097,7 +2226,7 @@ page-items:
     disabled: false
 
   layout: 
-    sequence: 60
+    sequence: 80
     region: Tournament Sessions # 56158045789158236792
     slot: BODY
     alignment: Left
@@ -2158,7 +2287,7 @@ page-items:
     use-defaults: true
 
   layout: 
-    sequence: 140
+    sequence: 160
     region: Tournament Sessions # 56158045789158236792
     slot: BODY
     alignment: Left
@@ -2219,7 +2348,7 @@ page-items:
     use-defaults: true
 
   layout: 
-    sequence: 160
+    sequence: 180
     region: Tournament Sessions # 56158045789158236792
     slot: BODY
     alignment: Left
@@ -2426,7 +2555,7 @@ buttons:
     label: View Issues
 
   layout: 
-    sequence: 40
+    sequence: 60
     region: Tournament Sessions # 56158045789158236792
     slot: BODY
     start-new-layout: false
@@ -2434,7 +2563,7 @@ buttons:
     column: 10
     new-column: true
     column-span: Automatic
-    alignment: Right
+    alignment: Left center
 
   appearance: 
     button-template: Text with Icon
@@ -3100,7 +3229,7 @@ processes:
       
 
   execution: 
-    sequence: 40
+    sequence: 50
     point: Processing
     run-process: Once Per Page Visit (default)
 
@@ -3131,7 +3260,7 @@ processes:
       
 
   execution: 
-    sequence: 50
+    sequence: 60
     point: Processing
     run-process: Once Per Page Visit (default)
 
@@ -3144,6 +3273,97 @@ processes:
 
   server-side-condition: 
     when-button-pressed: CLOSE_WEEKEND # 16730497793921831
+
+- # ====== Process: Make Tournament Current ====================
+  id: 76131558203229816
+  identification: 
+    name: Make Tournament Current
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      begin
+       wmg_util.set_tournament_control(p_tournament_type => 'WMGT', p_tournament_session_id => :P532_ID);
+      
+      if :P532_CLEAR_VOTES_FLAG = 'Y' then
+        logger.log('.. clear previous vote backup');
+        delete from wmg_course_vote_back;
+        logger.log('.. save vote backup');
+        insert into wmg_course_vote_back (
+            id
+          , course_id
+          , player_id
+          , vote
+          , created_on
+          , created_by
+          , updated_on
+          , updated_by
+          )
+          select   id
+          , course_id
+          , player_id
+          , vote
+          , created_on
+          , created_by
+          , updated_on
+          , updated_by
+          from wmg_course_vote;
+      
+        logger.log('..reset votes table');
+      
+        delete from wmg_course_vote;
+      end if;
+      
+      end;
+      
+      
+
+  execution: 
+    sequence: 20
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  success-message: 
+    success-message: This is now the current tournament.
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: ":REQUEST != 'CLOSE_WEEKEND' and :REQUEST != 'DELETE' and :P532_MAKE_CURRENT_FLAG = 'Y'"
+
+- # ====== Process: Clear Current Tournament ===================
+  id: 76131718762229818
+  identification: 
+    name: Clear Current Tournament
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: wmg_util.clear_tournament_control(p_tournament_type => 'WMGT');
+
+  execution: 
+    sequence: 30
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  success-message: 
+    success-message: Current tournament reset.
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: ":REQUEST != 'DELETE' and :P532_CLEAR_CURRENT_FLAG = 'Y'"
 
 - # ====== Process: Save Courses & Push Notifications ==========
   id: 56024166207057751661
@@ -3202,7 +3422,7 @@ processes:
       
 
   execution: 
-    sequence: 20
+    sequence: 40
     point: Processing
     run-process: Once Per Page Visit (default)
 
@@ -3266,7 +3486,7 @@ processes:
     show-success-messages: false
 
   execution: 
-    sequence: 60
+    sequence: 70
     point: Processing
     run-process: Once Per Page Visit (default)
 
