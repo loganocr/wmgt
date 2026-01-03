@@ -80,7 +80,7 @@
 
   computation: 
     type: Static Value
-    static-value: 24
+    static-value: 23
 
   server-side-condition: 
     type: Expression
@@ -91,5 +91,74 @@
     build-option: Commented Out # 46995003406591514325
 
   subscription: 
-    version-number: 40348156187493
+    version-number: 2559854544
+
+- # ====== Application Computation: G_VOTING_ALLOWED ===========
+  id: 80997425603243263
+  identification: 
+    item-name: G_VOTING_ALLOWED
+
+  execution: 
+    sequence: 10
+    point: New Session
+
+  computation: 
+    type: Function Body
+    language: PL/SQL
+    pl/sql-function-body: |
+      declare
+      l_num number;
+      begin
+      
+      
+      select sum(noshow_registrations+noscore_participation)
+      into l_num
+      from (
+            select sum(decode(issue_code, 'NOSHOW', 1, 0)) noshow_registrations
+                 , sum(decode(issue_code, 'NOSCORE', 1, 0)) noscore_participation
+               from wmg_tournament_players
+              where active_ind = 'Y'
+                and player_id = :G_PLAYER_ID
+                and tournament_session_id in (
+                  select ts.id
+                    from wmg_tournament_sessions ts
+                   where ts.tournament_id in (
+         select ts.tournament_id
+          from wmg_tournament_control tc
+          join wmg_tournament_sessions ts on ts.id = tc.tournament_session_id
+          where tournament_type_code = 'WMGT'               
+                   )
+                )
+      )
+      ;
+      
+      return case when l_num is null then 'NO' when l_num <=3 then 'YES' else 'NO' end;
+      end;
+      
+
+  comments: 
+    comments: |
+      with w_tournaments as (
+        select id
+             , lag(id) over (order by start_date, id) as prev_id
+             , current_flag
+        from wmg_tournaments
+      )
+      
+      
+      /*
+      -- last 2 seasons
+      select id
+      from w_tournaments
+      where current_flag = 'Y'
+      union all
+      select prev_id
+      from w_tournaments
+      where current_flag = 'Y'
+        and prev_id is not null
+      */
+      
+
+  subscription: 
+    version-number: 2409628573
 
