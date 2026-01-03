@@ -2165,7 +2165,7 @@ begin
         union
         select column_value from apex_string.split(wmg_util.get_param('VOTING_AVAILABLE_HARD'), ':')
         union
-        select code from wmg_courses where course_mode = 'E' and wmg_util.get_param('VOTING_AVAILABLE_HARD') is null
+        select code from wmg_courses where course_mode = 'H' and wmg_util.get_param('VOTING_AVAILABLE_HARD') is null
     );
 
 
