@@ -61,7 +61,7 @@
     comments: Allows players to vote on the course they want to play.
 
   subscription: 
-    version-number: 2360387676
+    version-number: 2559492060
 
 - # ====== Build Option: Feature: Handle Registrations =========
   id: 40390935797017803537

@@ -9353,7 +9353,7 @@ dynamic-actions:
   when: 
     event: After Refresh
     selection-type: Region
-    region: Season Courses Votes # 71049005439388616
+    region: '{Voting: Logged In Player}' # 71049005439388616
 
   actions: 
   - # ====== Action: Execute JavaScript Code =====================
@@ -9625,8 +9625,9 @@ dynamic-actions:
     jquery-selector: .receiveVote
 
   server-side-condition: 
-    type: Item is NOT NULL
-    item: G_REGISTRATION_ID
+    type: Item = Value
+    item: G_VOTING_ALLOWED
+    value: YES
 
   security: 
     authorization-scheme: MODEL.LOV.MUST_NOT_BE_PUBLIC_USER
@@ -9725,32 +9726,10 @@ dynamic-actions:
     settings: 
       language: PE.PROPERTY.SOURCE_SNIPPET_LANG.LOV.PLSQL.D
       pl/sql-code: |
-        logger.log('VOTE: ' || :APP_USER);
-        logger.log('..P1_VOTE_COURSE_CODE: ' || :P1_VOTE_COURSE_CODE);
-        logger.log('..P1_VOTE_COURSE: ' || :P1_VOTE_COURSE);
-        logger.log('..G_PLAYER_ID: ' || :G_PLAYER_ID);
-        merge into wmg_course_vote v
-        using (
-          select c.id course_id
-               , to_number(:P1_VOTE_COURSE default 0 on conversion error) vote
-               , nvl(:G_PLAYER_ID,0) player_id
-            from wmg_courses c
-           where c.code = :P1_VOTE_COURSE_CODE
-        ) src
-        on (v.course_id = src.course_id and v.player_id = src.player_id)
-        when matched then
-          update set v.vote = 
-                 case 
-                    when v.vote + src.vote = 0 then 0 -- flip flop the vote
-                    else src.vote
-                 end
-        when not matched then
-          insert (course_id, vote, player_id)
-          values (src.course_id, src.vote, src.player_id);
-        
-        -- make the changes visible right away
-        apex_region.purge_cache (
-            p_page_id    => 1
+        wmg_util.cast_player_vote(
+            p_player_id   => :G_PLAYER_ID
+          , p_course_code => :P1_VOTE_COURSE_CODE 
+          , p_vote        => to_number(:P1_VOTE_COURSE default 0 on conversion error)
         );
         
         
@@ -9774,7 +9753,7 @@ dynamic-actions:
 
     affected-elements: 
       selection-type: Region
-      region: Season Courses Votes # 71049005439388616
+      region: '{Voting: Logged In Player}' # 71049005439388616
 
     execution: 
       sequence: 60
@@ -9796,9 +9775,6 @@ dynamic-actions:
     event: Click
     selection-type: Button
     button: VOTE_HELP # 74128338574127998
-
-  security: 
-    authorization-scheme: MODEL.LOV.MUST_NOT_BE_PUBLIC_USER
 
   configuration: 
     build-option: 'Feature: Course Voting' # 74226408207696862
@@ -9833,9 +9809,6 @@ dynamic-actions:
     event: Click
     selection-type: Button
     button: CLOSE_ABOUT_VOTING # 74128755419128002
-
-  security: 
-    authorization-scheme: MODEL.LOV.MUST_NOT_BE_PUBLIC_USER
 
   configuration: 
     build-option: 'Feature: Course Voting' # 74226408207696862

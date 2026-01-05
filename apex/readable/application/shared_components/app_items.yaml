@@ -106,6 +106,19 @@
   subscription: 
     version-number: 41100995118086
 
+- # ====== Application Item: G_VOTING_ALLOWED ==================
+  id: 80997096728238655
+  identification: 
+    name: G_VOTING_ALLOWED
+    scope: Application
+
+  security: 
+    session-state-protection: Restricted - May not be set from browser
+    escape-special-characters: true
+
+  subscription: 
+    version-number: 2392310153
+
 - # ====== Application Item: G_CURRENT_SESSION_ID ==============
   id: 2325259958975904259
   identification: 
