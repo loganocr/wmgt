@@ -4,6 +4,12 @@
 
 Total Players: #TOTAL_PLAYERS#
 
+**Badges:**
+:coconut: _36 holes of par or under_: **#COCONUT_PLAYERS#**
+:cactus: _Solo Ace (Only player to ace a hole)_: **#CACTUS_PLAYERS#**
+:duck: _Rare Ace (Small number of players to ace a hole)_: **#DUCK_PLAYERS#**
+:lady_beetle: _Rare non-ace best score_: **#BEETLE_PLAYERS#**
+
 ---------------------------------
 ⛳ **PODIUM PLACEMENTS**
 
@@ -19,26 +25,35 @@ Total Players: #TOTAL_PLAYERS#
 
 
 ---------------------------------
+🎖️ **AMATEUR DIVISION**
+
+TOP 3 #AMA_TOP_3#
+
+TOP EASY SCORE #AMA_TOP_EASY_SCORE# #AMA_TOP_EASY_PLAYERS# 
+TOP HARD SCORE #AMA_TOP_HARD_SCORE# #AMA_TOP_HARD_PLAYERS# 
+
+---------------------------------
+🏅 **SEMI-PRO DIVISION**
+
+TOP 3 #SEMI_TOP_3#
+
+TOP EASY SCORE #SEMI_TOP_EASY_SCORE# #SEMI_TOP_EASY_PLAYERS# 
+TOP HARD SCORE #SEMI_TOP_HARD_SCORE# #SEMI_TOP_HARD_PLAYERS# 
+
+---------------------------------
+🏅 **PRO DIVISION**
+
+TOP 3 #PRO_TOP_3#
+
+TOP EASY SCORE #PRO_TOP_EASY_SCORE# #PRO_TOP_EASY_PLAYERS# 
+TOP HARD SCORE #PRO_TOP_HARD_SCORE# #PRO_TOP_HARD_PLAYERS# 
+
+
+---------------------------------
 
 **PLAYER OF THE WEEK**
 
-
----------------------------------
-🛡️ **ELITE**
-#ELITE_PLAYERS#
-
----------------------------------
-🏅 **PRO**
-#PRO_PLAYERS#
-
----------------------------------
-🏅 **SEMI-PRO**
-#SEMI_PLAYERS#
-
----------------------------------
-🎖️**AMATEUR**
-#AMATEUR_PLAYERS#
-
+#PLAYER_OF_THE_WEEK_NOTE#
 
 ---------------------------------
 
