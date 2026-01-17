@@ -313,6 +313,23 @@
         url: 'f?p=&APP_ID.:570:&APP_SESSION.::&DEBUG.:::'
         page: 570 # Teams
 
+  - # ====== Entry: Player Moderation ============================
+    id: 106433382333160614
+    identification: 
+      name: Player Moderation
+      page-number: 580
+
+    execution: 
+      sequence: 10
+
+    appearance: 
+      parent-entry: Tournament Admin # 55996558640568016935
+
+    link: 
+      target: 
+        url: 'f?p=&APP_ID.:580:&APP_SESSION.::&DEBUG.:::'
+        page: 580 # Player Moderation
+
   - # ====== Entry: Results Download =============================
     id: 24470726256894401757
     identification: 

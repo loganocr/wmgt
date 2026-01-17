@@ -1,0 +1,595 @@
+---
+# ====== Page: Player Moderation =============================
+id: 580
+identification: 
+  name: Player Moderation
+  alias: PLAYER-MODERATION
+  title: Player Moderation
+
+appearance: 
+  page-mode: Normal
+  page-template: Theme Default
+  template-options: 
+  - '#DEFAULT#'
+
+navigation-menu: 
+  override-user-interface-level: false
+
+navigation: 
+  cursor-focus: Do not focus cursor
+  warn-on-unsaved-changes: true
+
+security: 
+  authentication: Page Requires Authentication
+  deep-linking: Application Default
+  page-access-protection: Arguments Must Have Checksum
+  form-auto-complete: Off
+  browser-cache: Application Default
+
+session-management: 
+  rejoin-sessions: Application Default
+
+advanced: 
+  enable-duplicate-page-submissions: Yes - Enable page to be re-posted
+  reload-on-submit: Only for Success
+
+server-cache: 
+  caching: Disabled
+
+regions: 
+- # ====== Region: Player Moderation ===========================
+  id: 106426503344160633
+  identification: 
+    name: Player Moderation
+    type: Classic Report
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      select m.id
+           , m.player_id
+           , nvl(p.player_name, m.player_id) player_name
+           , m.banned_flag
+           , case 
+               when m.banned_flag = 'Y' then
+                 'Banned'
+               when m.timeout_flag = 'Y' then
+                 case 
+                 when m.timeout_tournament_id is not null then
+                   'Timed out for Season ' || t.code
+                 else
+                   'Timed out until ' || to_char(m.timeout_end_date, 'DD-Mon-YYYY HH24:MI')
+                 end
+             else ''
+             end as moderation_status
+           , m.timeout_flag
+           , decode(m.notes, null, '', 'Y') as notes_flag
+           , m.notes
+           , decode(m.player_message, null, '', 'Y') as player_message_flag
+           , m.player_message
+           , m.active_ind
+           , m.created_by
+           , m.created_on
+           , m.updated_by
+           , m.updated_on
+        from wmg_player_moderation m
+        left join wmg_players_v p on m.player_id = p.id
+        left join wmg_tournaments t on m.timeout_tournament_id = t.id
+
+  layout: 
+    sequence: 10
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--noPadding
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    layout: 
+      number-of-rows-type: Static Value
+      number-of-rows: 50
+
+    appearance: 
+      template-type: Theme
+      template: Standard
+      template-options: 
+      - '#DEFAULT#'
+      - t-Report--stretch
+      - t-Report--staticRowColors
+      - t-Report--rowHighlight
+      - t-Report--inline
+      - t-Report--hideNoPagination
+
+    pagination: 
+      type: Row Ranges X to Y (with next and previous links)
+      display-position: Bottom - Right
+      partial-page-refresh: true
+
+    performance: 
+      lazy-loading: false
+      maximum-rows-to-process: 500
+
+    messages: 
+      when-no-data-found: no data found
+
+    break-formatting: 
+      break-columns: No Break
+
+    advanced: 
+      strip-html: false
+      sort-nulls: Last
+
+    heading: 
+      type: Custom Headings
+
+    download: 
+      csv-export-enabled: false
+
+    printing: 
+      enabled: false
+
+  columns: 
+  - # ====== Column: PLAYER_NAME =================================
+    id: 92659030668565733
+    identification: 
+      column-name: PLAYER_NAME
+      type: Plain Text
+
+    heading: 
+      heading: Player
+      alignment: start
+
+    layout: 
+      sequence: 12
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: MODERATION_STATUS ===========================
+    id: 92659125302565734
+    identification: 
+      column-name: MODERATION_STATUS
+      type: Plain Text
+
+    heading: 
+      heading: Moderation Status
+      alignment: center
+
+    layout: 
+      sequence: 42
+      column-alignment: center
+
+    accessibility: 
+      value-identifies-row: false
+
+    column-formatting: 
+      html-expression: |
+        {if BANNED_FLAG/}
+        <div class="t-Badge u-danger">#MODERATION_STATUS#</div>
+        {else/}
+        #MODERATION_STATUS#
+        {endif/}
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: NOTES_FLAG ==================================
+    id: 92659232086565735
+    identification: 
+      column-name: NOTES_FLAG
+      type: Plain Text
+
+    heading: 
+      heading: Internal Notes ?
+      alignment: center
+
+    layout: 
+      sequence: 72
+      column-alignment: center
+
+    accessibility: 
+      value-identifies-row: false
+
+    column-formatting: 
+      html-expression: <i class="fa cfa-note_#NOTES_FLAG# cfa-1_5x tooltip" title="#NOTES#"></i>
+
+    sorting: 
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: PLAYER_MESSAGE_FLAG =========================
+    id: 92659373774565736
+    identification: 
+      column-name: PLAYER_MESSAGE_FLAG
+      type: Hidden
+
+    layout: 
+      sequence: 152
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: BANNED_FLAG =================================
+    id: 92659501372565737
+    identification: 
+      column-name: BANNED_FLAG
+      type: Hidden
+
+    layout: 
+      sequence: 22
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: ID ==========================================
+    id: 106426811044160620
+    identification: 
+      column-name: ID
+      type: Link
+
+    heading: 
+      alignment: center
+
+    layout: 
+      sequence: 0
+      column-alignment: center
+
+    accessibility: 
+      value-identifies-row: false
+
+    link: 
+      target: 
+        url: 'f?p=&APP_ID.:585:&APP_SESSION.::&DEBUG.:RP:P585_ID:\#ID#\'
+        page: 585 # Moderation
+        clear-cache: RP
+        values: 
+          p585_id: '#ID#'
+
+      link-text: <span role="img" aria-label="Edit" class="fa fa-edit" title="Edit"></span>
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: false
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: PLAYER_ID ===================================
+    id: 106427226237160619
+    identification: 
+      column-name: PLAYER_ID
+      type: Hidden
+
+    layout: 
+      sequence: 2
+
+    sorting: 
+      default-sequence: 1
+      direction: Ascending
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: NOTES =======================================
+    id: 106427703111160618
+    identification: 
+      column-name: NOTES
+      type: Hidden
+
+    layout: 
+      sequence: 82
+
+    sorting: 
+      default-sequence: 1
+      direction: Ascending
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: PLAYER_MESSAGE ==============================
+    id: 106428101011160618
+    identification: 
+      column-name: PLAYER_MESSAGE
+      type: Plain Text
+
+    heading: 
+      heading: Player Message
+      alignment: start
+
+    layout: 
+      sequence: 62
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      default-sequence: 1
+      direction: Ascending
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: TIMEOUT_FLAG ================================
+    id: 106428873600160618
+    identification: 
+      column-name: TIMEOUT_FLAG
+      type: Hidden
+
+    layout: 
+      sequence: 32
+
+    sorting: 
+      default-sequence: 1
+      direction: Ascending
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: ACTIVE_IND ==================================
+    id: 106430032439160618
+    identification: 
+      column-name: ACTIVE_IND
+      type: Plain Text
+
+    heading: 
+      heading: Active ?
+      alignment: center
+
+    layout: 
+      sequence: 102
+      column-alignment: center
+
+    accessibility: 
+      value-identifies-row: false
+
+    column-formatting: 
+      html-expression: <i class="fa cfa-check_#ACTIVE_IND# cfa-1_5x" title="#ACTIVE_IND#"></i>
+
+    sorting: 
+      default-sequence: 1
+      direction: Ascending
+      sortable: true
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: CREATED_BY ==================================
+    id: 106430412303160617
+    identification: 
+      column-name: CREATED_BY
+      type: Hidden
+
+    layout: 
+      sequence: 112
+
+    sorting: 
+      default-sequence: 1
+      direction: Ascending
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: CREATED_ON ==================================
+    id: 106430906379160617
+    identification: 
+      column-name: CREATED_ON
+      type: Hidden
+
+    layout: 
+      sequence: 122
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: UPDATED_BY ==================================
+    id: 106431232187160617
+    identification: 
+      column-name: UPDATED_BY
+      type: Hidden
+
+    layout: 
+      sequence: 132
+
+    sorting: 
+      default-sequence: 1
+      direction: Ascending
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: UPDATED_ON ==================================
+    id: 106431679686160617
+    identification: 
+      column-name: UPDATED_ON
+      type: Hidden
+
+    layout: 
+      sequence: 142
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+buttons: 
+- # ====== Button: CREATE ======================================
+  id: 106432157200160616
+  identification: 
+    button-name: CREATE
+    label: Add Modetation
+
+  layout: 
+    sequence: 10
+    region: Player Moderation # 106426503344160633
+    slot: EDIT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: true
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconRight
+    icon: fa-plus
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:585:&APP_SESSION.::&DEBUG.:585::'
+      page: 585 # Moderation
+      clear-cache: 585
+
+    warn-on-unsaved-changes: Do Not Check
+
+dynamic-actions: 
+- # ====== Dynamic Action: Edit Report - Dialog Closed =========
+  id: 106432461783160616
+  identification: 
+    name: Edit Report - Dialog Closed
+
+  execution: 
+    sequence: 10
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Dialog Closed
+    selection-type: Region
+    region: Player Moderation # 106426503344160633
+
+  actions: 
+  - # ====== Action: Refresh =====================================
+    id: 106432970145160615
+    identification: 
+      action: Refresh
+
+    affected-elements: 
+      selection-type: Region
+      region: Player Moderation # 106426503344160633
+
+    execution: 
+      sequence: 10
+      event: Edit Report - Dialog Closed # 106432461783160616
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+

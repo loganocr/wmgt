@@ -155,7 +155,7 @@
     name: System Maintenance
 
   subscription: 
-    version-number: 1
+    version-number: 2503375961
 
   source: 
     type: Static Values
@@ -257,6 +257,28 @@
 
     click-counting: 
       count-clicks: false
+
+    user-defined-attributes: 
+      translatable: false
+
+  - # ====== Entry: Player Modetation ============================
+    id: 106405008165201653
+    label: 
+      label: Player Modetation
+
+    icon: 
+      image/icon-css-classes: fa-gavel
+
+    layout: 
+      sequence: 25
+
+    is-current: 
+      type: Target Page
+
+    link: 
+      target: 
+        url: 'f?p=&APP_ID.:580:&SESSION.::&DEBUG.::::'
+        page: 580 # Player Moderation
 
     user-defined-attributes: 
       translatable: false

@@ -38,8 +38,8 @@ javascript:
     
     function rankMenuAction(btn, actionMenu, rank, player) {
     
-     console.log(btn);
-     console.log(actionMenu);
+    // console.log(btn);
+    // console.log(actionMenu);
      apex.server.process('RANKS'
         , {x01: player,
            x02: rank

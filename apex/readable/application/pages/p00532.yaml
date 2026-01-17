@@ -1108,6 +1108,15 @@ regions:
       column-name: RN
       type: Hidden
 
+    layout: 
+      sequence: 70
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
   - # ====== Column: COURSE_ID ===================================
     id: 76131398653229814
     identification: 
@@ -1144,8 +1153,247 @@ regions:
     security: 
       escape-special-characters: true
 
+- # ====== Region: Rank Promotions =============================
+  id: 229688949021830195
+  identification: 
+    name: Rank Promotions
+    type: Classic Report
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      select r.rank_name
+           , r.rank_list_class
+           , p.player_name
+           , r.start_date
+           , r.duration_days
+           , r.tournament_session_week
+      from wmg_complete_player_progression_v r
+      join wmg_players_v p on r.player_id = p.id
+      where r.tournament_session_id = :P532_ID
+      order by r.rank_display_seq desc, p.player_name
+    page-items-to-submit: 
+    - P532_PLAYER_ID
+
+  layout: 
+    sequence: 160
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--noBorder
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    static-id: ranksRegion
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-side-condition: 
+    type: Rows returned
+    sql-query: "select 1 from wmg_tournament_sessions where id = :P532_ID and rooms_defined_flag = 'Y' and rooms_open_flag = 'Y'"
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    layout: 
+      number-of-rows-type: Static Value
+      number-of-rows: 15
+
+    appearance: 
+      template-type: Theme
+      template: Standard
+      template-options: 
+      - '#DEFAULT#'
+      - t-Report--stretch
+      - t-Report--staticRowColors
+      - t-Report--rowHighlightOff
+      - t-Report--noBorders
+
+    pagination: 
+      type: Row Ranges X to Y (with next and previous links)
+      display-position: Bottom - Right
+      partial-page-refresh: true
+
+    performance: 
+      lazy-loading: false
+
+    break-formatting: 
+      break-columns: First Column
+      style: Default Break Formatting
+
+    advanced: 
+      strip-html: false
+      sort-nulls: Last
+
+    heading: 
+      type: Custom Headings
+
+    download: 
+      csv-export-enabled: false
+
+    printing: 
+      enabled: false
+
+  columns: 
+  - # ====== Column: PLAYER_NAME =================================
+    id: 114537571203710405
+    identification: 
+      column-name: PLAYER_NAME
+      type: Plain Text
+
+    heading: 
+      heading: Player Name
+      alignment: start
+
+    layout: 
+      sequence: 20
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: RANK_LIST_CLASS =============================
+    id: 114572720141651437
+    identification: 
+      column-name: RANK_LIST_CLASS
+      type: Hidden
+
     layout: 
       sequence: 60
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: RANK_NAME ===================================
+    id: 114573191770651437
+    identification: 
+      column-name: RANK_NAME
+      type: Plain Text
+
+    heading: 
+      heading: Rank
+      alignment: start
+
+    layout: 
+      sequence: 10
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    column-formatting: 
+      html-expression: '#RANK_NAME# <div class="#RANK_LIST_CLASS# tooltip" title="#RANK_NAME#"></div>'
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: START_DATE ==================================
+    id: 114573584900651437
+    identification: 
+      column-name: START_DATE
+      type: Plain Text
+
+    heading: 
+      heading: On
+      alignment: start
+
+    layout: 
+      sequence: 30
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    column-formatting: 
+      html-expression: '#START_DATE# <i class="fa fa-info-circle-o tooltip" title="Held for #DURATION_DAYS#, achieved on #TOURNAMENT_SESSION_WEEK#"></i>'
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: DURATION_DAYS ===============================
+    id: 114573951962651436
+    identification: 
+      column-name: DURATION_DAYS
+      type: Hidden
+
+    layout: 
+      sequence: 40
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: TOURNAMENT_SESSION_WEEK =====================
+    id: 114574365123651436
+    identification: 
+      column-name: TOURNAMENT_SESSION_WEEK
+      type: Hidden
+
+    layout: 
+      sequence: 50
 
     ui-defaults-reference: 
       table-owner: Parsing Schema
@@ -1362,7 +1610,7 @@ page-items:
     syntax-highlighting: true
 
   layout: 
-    sequence: 180
+    sequence: 200
     region: Tournament Sessions # 56158045789158236792
     slot: BODY
     alignment: Left
@@ -1457,7 +1705,7 @@ page-items:
     use-defaults: true
 
   layout: 
-    sequence: 150
+    sequence: 170
     region: Tournament Sessions # 56158045789158236792
     slot: BODY
     alignment: Left
@@ -1717,6 +1965,117 @@ page-items:
 
   configuration: 
     build-option: 'Feature: Course Voting' # 74226408207696862
+
+- # ====== Page Item: P532_MAKE_CURRENT_FLAG ===================
+  id: 76131453168229815
+  identification: 
+    name: P532_MAKE_CURRENT_FLAG
+    type: Checkbox
+
+  label: 
+    label: Make Current?
+    alignment: Left
+
+  settings: 
+    use-defaults: true
+
+  layout: 
+    sequence: 40
+    region: Tournament Sessions # 56158045789158236792
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+
+  validation: 
+    value-required: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  default: 
+    type: Function Body
+    language: PL/SQL
+    pl/sql-function-body: "if :P532_ID is null then return 'Y'; else return null; end if;"
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: "nvl(:P532_ID,-1) != nvl(wmg_util.get_tournament_control(p_tournament_type => 'WMGT'),0)"
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P532_CLEAR_CURRENT_FLAG ==================
+  id: 76131659632229817
+  identification: 
+    name: P532_CLEAR_CURRENT_FLAG
+    type: Checkbox
+
+  label: 
+    label: Clear Current?
+    alignment: Left
+
+  settings: 
+    use-defaults: true
+
+  layout: 
+    sequence: 50
+    region: Tournament Sessions # 56158045789158236792
+    slot: BODY
+    alignment: Left
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    label-column-span: Page Template Default
+
+  appearance: 
+    template: Optional - Above
+    template-options: 
+    - '#DEFAULT#'
+
+  validation: 
+    value-required: false
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    storage: Per Session (Persistent)
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: "nvl(:P532_ID,-1) = wmg_util.get_tournament_control(p_tournament_type => 'WMGT')"
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
 
 - # ====== Page Item: P532_ROOMS_DEFINED_BY ====================
   id: 40389412453228769162

@@ -1726,7 +1726,7 @@ regions:
                   )
                  ) c
         ) coconut_players
-       where ratio < .2 -- only display when the ration is less than 20%
+       where ratio < .3 -- only display when the ration is less than 30%
       order by display_seq
       
     page-items-to-submit: 

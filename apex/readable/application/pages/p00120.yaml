@@ -122,7 +122,7 @@ regions:
     start-new-row: true
     column: Automatic
     new-column: true
-    column-span: 3
+    column-span: Automatic
 
   appearance: 
     template: Standard
@@ -164,7 +164,7 @@ regions:
     start-new-row: true
     column: Automatic
     new-column: true
-    column-span: Automatic
+    column-span: 3
 
   appearance: 
     template: Blank with Attributes
@@ -311,6 +311,326 @@ regions:
     security: 
       escape-special-characters: true
 
+- # ====== Region: {Player Achivements} ========================
+  id: 92660007425565743
+  identification: 
+    name: '{Player Achivements}'
+    type: Static Content
+
+  layout: 
+    sequence: 20
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: {Filters} ===================================
+  id: 92660166181565744
+  identification: 
+    name: '{Filters}'
+    type: Static Content
+
+  layout: 
+    sequence: 5
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
+
+- # ====== Region: Rank Progression ============================
+  id: 92660220600565745
+  identification: 
+    name: Rank Progression
+    type: Classic Report
+
+  source: 
+    location: Local Database
+    type: SQL Query
+    sql-query: |
+      select rank_name
+           , rank_list_class
+           , start_date
+           , to_char(start_date) start_date_prepared
+           , duration_days
+           , to_char(duration_days, '999G999') duration_days_prepared
+           , tournament_session_week
+      from wmg_complete_player_progression_v
+      where player_id = :P120_PLAYER_ID
+      order by start_date desc
+    page-items-to-submit: 
+    - P120_PLAYER_ID
+
+  layout: 
+    sequence: 40
+    parent-region: '{Player Details}' # 29606961651034251
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--noBorder
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    static-id: ranksRegion
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    layout: 
+      number-of-rows-type: Static Value
+      number-of-rows: 15
+
+    appearance: 
+      template-type: Theme
+      template: Standard
+      template-options: 
+      - '#DEFAULT#'
+      - t-Report--stretch
+      - t-Report--staticRowColors
+      - t-Report--rowHighlightOff
+      - t-Report--noBorders
+
+    pagination: 
+      type: Row Ranges X to Y (with next and previous links)
+      display-position: Bottom - Right
+      partial-page-refresh: true
+
+    performance: 
+      lazy-loading: false
+
+    break-formatting: 
+      break-columns: No Break
+
+    advanced: 
+      strip-html: false
+      sort-nulls: Last
+
+    heading: 
+      type: Custom Headings
+
+    download: 
+      csv-export-enabled: false
+
+    printing: 
+      enabled: false
+
+  columns: 
+  - # ====== Column: RANK_NAME ===================================
+    id: 92660352367565746
+    identification: 
+      column-name: RANK_NAME
+      type: Plain Text
+
+    heading: 
+      heading: Rank
+      alignment: start
+
+    layout: 
+      sequence: 10
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    column-formatting: 
+      html-expression: '#RANK_NAME# <div class="#RANK_LIST_CLASS# tooltip" title="#RANK_NAME#"></div>'
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: START_DATE ==================================
+    id: 92660483948565747
+    identification: 
+      column-name: START_DATE
+      type: Plain Text
+
+    heading: 
+      heading: Since
+      alignment: start
+
+    layout: 
+      sequence: 20
+      column-alignment: start
+
+    accessibility: 
+      value-identifies-row: false
+
+    appearance: 
+      format-mask: SINCE
+
+    column-formatting: 
+      html-expression: '#START_DATE# <i class="fa fa-info-circle-o tooltip" title="Held since #START_DATE_PREPARED# (#DURATION_DAYS_PREPARED# days), achieved on #TOURNAMENT_SESSION_WEEK#"></i>'
+
+    sorting: 
+      sortable: false
+
+    export-/-printing: 
+      include-in-export-/-print: true
+
+    advanced: 
+      compute-sum: false
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: DURATION_DAYS ===============================
+    id: 114536906475710398
+    identification: 
+      column-name: DURATION_DAYS
+      type: Hidden
+
+    layout: 
+      sequence: 30
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: TOURNAMENT_SESSION_WEEK =====================
+    id: 114536978067710399
+    identification: 
+      column-name: TOURNAMENT_SESSION_WEEK
+      type: Hidden
+
+    layout: 
+      sequence: 40
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: RANK_LIST_CLASS =============================
+    id: 114537249069710402
+    identification: 
+      column-name: RANK_LIST_CLASS
+      type: Hidden
+
+    layout: 
+      sequence: 50
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: DURATION_DAYS_PREPARED ======================
+    id: 114537662019710406
+    identification: 
+      column-name: DURATION_DAYS_PREPARED
+      type: Hidden
+
+    layout: 
+      sequence: 60
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: START_DATE_PREPARED =========================
+    id: 114537759674710407
+    identification: 
+      column-name: START_DATE_PREPARED
+      type: Hidden
+
+    layout: 
+      sequence: 70
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
 - # ====== Region: Badges & Achivements ========================
   id: 95599643753790401
   identification: 
@@ -387,10 +707,10 @@ regions:
 
   layout: 
     sequence: 30
-    parent-region: '{Player Details}' # 29606961651034251
+    parent-region: '{Player Achivements}' # 92660007425565743
     slot: BODY
     start-new-layout: false
-    start-new-row: false
+    start-new-row: true
     column: Automatic
     new-column: true
     column-span: Automatic
@@ -763,11 +1083,11 @@ regions:
 
   layout: 
     sequence: 50
-    parent-region: '{Player Details}' # 29606961651034251
+    parent-region: '{Player Achivements}' # 92660007425565743
     slot: BODY
     start-new-layout: false
     start-new-row: true
-    column: 4
+    column: Automatic
     new-column: true
     column-span: Automatic
 
@@ -1981,14 +2301,14 @@ page-items:
 
   layout: 
     sequence: 20
-    region: '{Player Details}' # 29606961651034251
+    region: '{Filters}' # 92660166181565744
     slot: BODY
     alignment: Left
     start-new-layout: false
-    start-new-row: false
+    start-new-row: true
     column: Automatic
     new-column: true
-    column-span: Automatic
+    column-span: 3
     label-column-span: Page Template Default
     column-css-classes: 
     - col-xs-8
@@ -2179,7 +2499,7 @@ dynamic-actions:
       region: Badges & Achivements # 95599643753790401
 
     execution: 
-      sequence: 20
+      sequence: 30
       event: Refresh on Change # 16211947337742881
       fire-when-event-result-is: True
       fire-on-initialization: false
@@ -2194,7 +2514,7 @@ dynamic-actions:
       region: Season Race # 109527198635339957
 
     execution: 
-      sequence: 40
+      sequence: 50
       event: Refresh on Change # 16211947337742881
       fire-when-event-result-is: True
       fire-on-initialization: false
@@ -2209,7 +2529,22 @@ dynamic-actions:
       region: '{Best Scores}' # 57676790858599636
 
     execution: 
-      sequence: 30
+      sequence: 40
+      event: Refresh on Change # 16211947337742881
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+  - # ====== Action: Refresh =====================================
+    id: 114537043466710400
+    identification: 
+      action: Refresh
+
+    affected-elements: 
+      selection-type: Region
+      region: Rank Progression # 92660220600565745
+
+    execution: 
+      sequence: 20
       event: Refresh on Change # 16211947337742881
       fire-when-event-result-is: True
       fire-on-initialization: false
@@ -2357,6 +2692,36 @@ dynamic-actions:
     execution: 
       sequence: 10
       event: Tooltips # 38738135984129114
+      fire-when-event-result-is: True
+      fire-on-initialization: true
+
+- # ====== Dynamic Action: ranksRegion tooltips ================
+  id: 114537342715710403
+  identification: 
+    name: ranksRegion tooltips
+
+  execution: 
+    sequence: 50
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: After Refresh
+    selection-type: Region
+    region: Rank Progression # 92660220600565745
+
+  actions: 
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 114537423610710404
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: $("#ranksRegion .tooltip").tooltip()
+
+    execution: 
+      sequence: 10
+      event: ranksRegion tooltips # 114537342715710403
       fire-when-event-result-is: True
       fire-on-initialization: true
 

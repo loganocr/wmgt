@@ -131,6 +131,24 @@ css:
     .vERROR:before {content: "\eb00";}
     span.NA_Y:before {content: "\e9e5"; color: orange;font-weight: bold;}
     
+    .vStatus {position: relative;}
+    .FAILED, .SUCCESS, .NO_MATCH {
+        width: 8px;
+        height: 8px;
+        display: inline-block;
+        position: absolute;
+        top: -7px;
+    }
+    .NO_MATCH {
+        background-color: var(--rw-palette-neutral-100);
+    }
+    .FAILED {
+        background-color: var(--ut-palette-danger);
+    }
+    .SUCCESS {
+        background-color: var(--ut-palette-success);
+    }
+    
     .is-current .roomVerification.vYES {
         color: #00cc00;
     }
@@ -242,6 +260,8 @@ regions:
                 end action_label
              , i.icon action_icon
              , case when p.issue_code is not null then 't-Button--primary' else '' end action_selected
+             , r.easy_verification_status
+             , r.hard_verification_status
           from wmg_tournament_results_v r
              , wmg_tournament_player_v p
              , wmg_issues i
@@ -284,6 +304,8 @@ regions:
            , sc.action_selected
            , sc.action_label
            , sc.action_icon
+           , sc.easy_verification_status
+           , sc.hard_verification_status
       from  (
           select s.pos
                , s.time_slot
@@ -329,6 +351,8 @@ regions:
                 , s.action_label
                 , s.action_selected
                 , s.action_icon
+                , s.easy_verification_status
+                , s.hard_verification_status
             from scorecards s
       ) sc
       , wmg_time_slots_all_v t
@@ -352,7 +376,7 @@ regions:
     - P75_HARD
 
   layout: 
-    sequence: 179
+    sequence: 199
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -498,7 +522,7 @@ regions:
       value-identifies-row: false
 
     column-formatting: 
-      html-expression: <span class="#EASY_DIFF#">#EASY_PAR#</span>
+      html-expression: '<span class="vStatus #EASY_DIFF#">#EASY_PAR#<span class="#EASY_VERIFICATION_STATUS# tooltip" title="#EASY_VERIFICATION_STATUS#"></span></span>'
 
     sorting: 
       sortable: false
@@ -533,7 +557,7 @@ regions:
       value-identifies-row: false
 
     column-formatting: 
-      html-expression: <span class="#HARD_DIFF#">#HARD_PAR#</span>
+      html-expression: '<span class="vStatus #HARD_DIFF#">#HARD_PAR#<span class="#HARD_VERIFICATION_STATUS# tooltip" title="#HARD_VERIFICATION_STATUS#"></span></span>'
 
     sorting: 
       sortable: false
@@ -1216,6 +1240,36 @@ regions:
     security: 
       escape-special-characters: true
 
+  - # ====== Column: EASY_VERIFICATION_STATUS ====================
+    id: 85007978796720143
+    identification: 
+      column-name: EASY_VERIFICATION_STATUS
+      type: Hidden
+
+    layout: 
+      sequence: 360
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
+  - # ====== Column: HARD_VERIFICATION_STATUS ====================
+    id: 85008076361720144
+    identification: 
+      column-name: HARD_VERIFICATION_STATUS
+      type: Hidden
+
+    layout: 
+      sequence: 370
+
+    ui-defaults-reference: 
+      table-owner: Parsing Schema
+
+    security: 
+      escape-special-characters: true
+
 - # ====== Region: Note ========================================
   id: 43960816507790344
   identification: 
@@ -1223,7 +1277,7 @@ regions:
     type: Static Content
 
   layout: 
-    sequence: 189
+    sequence: 209
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -1286,7 +1340,7 @@ regions:
     - P75_SLOT
 
   layout: 
-    sequence: 169
+    sequence: 189
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -2048,7 +2102,7 @@ page-items:
     start-new-row: false
     column: Automatic
     new-column: true
-    column-span: 4
+    column-span: 3
     label-column-span: Page Template Default
     column-css-classes: 
     - col-xxs-6
@@ -2435,6 +2489,70 @@ buttons:
 
     warn-on-unsaved-changes: Do Not Check
 
+- # ====== Button: QUICK_VERIFY ================================
+  id: 85003659255720100
+  identification: 
+    button-name: QUICK_VERIFY
+    label: Quick Verify
+
+  layout: 
+    sequence: 169
+    region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    alignment: Left center
+
+  appearance: 
+    button-template: Text with Icon
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconRight
+    - t-Button--gapTop
+    icon: fa-bolt
+
+  behavior: 
+    action: Submit Page
+    execute-validations: true
+    show-processing: true
+    warn-on-unsaved-changes: Do Not Check
+
+- # ====== Button: VERIFY ======================================
+  id: 85004102584720104
+  identification: 
+    button-name: VERIFY
+    label: Verify
+
+  layout: 
+    sequence: 179
+    region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+    alignment: Left center
+
+  appearance: 
+    button-template: Text with Icon
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconRight
+    - t-Button--gapTop
+    icon: fa-ai-sparkle-generate-image
+
+  behavior: 
+    action: Submit Page
+    execute-validations: true
+    show-processing: true
+    warn-on-unsaved-changes: Do Not Check
+
 dynamic-actions: 
 - # ====== Dynamic Action: Refresh Data ========================
   id: 11991347459685608
@@ -2812,9 +2930,10 @@ dynamic-actions:
     value: E
 
   actions: 
-  - # ====== Action: Set Value ===================================
+  - # ====== Action: Initialize with the previous value ==========
     id: 43961236833790348
     identification: 
+      name: Initialize with the previous value
       action: Set Value
 
     settings: 
@@ -2851,10 +2970,33 @@ dynamic-actions:
       region: Note # 43960816507790344
 
     execution: 
+      sequence: 30
+      event: Open Notes for Error # 43961121223790347
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+  - # ====== Action: Clear the "trigger" =========================
+    id: 85007840353720142
+    identification: 
+      name: Clear the "trigger"
+      action: Set Value
+
+    settings: 
+      set-type: Static Assignment
+      suppress-change-event: true
+
+    affected-elements: 
+      selection-type: Item(s)
+      item(s): 
+      - P75_NEW_FLAG
+
+    execution: 
       sequence: 20
       event: Open Notes for Error # 43961121223790347
       fire-when-event-result-is: True
       fire-on-initialization: false
+      stop-execution-on-error: false
+      wait-for-result: false
 
 - # ====== Dynamic Action: Close Notes =========================
   id: 46932389954678601
@@ -3289,6 +3431,28 @@ dynamic-actions:
       fire-when-event-result-is: True
       fire-on-initialization: false
 
+validations: 
+- # ====== Validation: Room Required to Verify =================
+  id: 85003863628720102
+  identification: 
+    name: Room Required to Verify
+
+  execution: 
+    sequence: 10
+
+  validation: 
+    type: Item is NOT NULL
+    item: P75_ROOM
+    always-execute: true
+
+  error: 
+    error-message: Room Required to Verify
+    display-location: Inline with Field and in Notification
+
+  server-side-condition: 
+    type: Request is contained in Value
+    value: QUICK_VERIFY,VERIFY
+
 computations: 
 - # ====== Computation: P75_WEEK ===============================
   id: 11992252299685617
@@ -3349,4 +3513,58 @@ processes:
     sequence: 10
     point: Ajax Callback
     run-process: Once Per Page Visit (default)
+
+- # ====== Process: Verify Card ================================
+  id: 85003757228720101
+  identification: 
+    name: Verify Card
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      begin
+          if :REQUEST = 'QUICK_VERIFY' then
+            wmg_verification_engine.g_quick_verify := true;
+          end if;
+      
+          wmg_verification_engine.verify_room(
+              p_tournament_session_id => :P75_TOURNAMENT_SESSION_ID,
+              p_room_no               => :P75_ROOM
+          );
+      
+      end;
+
+  execution: 
+    sequence: 10
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  success-message: 
+    success-message: Verification Completed
+
+  error: 
+    display-location: Inline in Notification
+
+  server-side-condition: 
+    type: Request is contained in Value
+    value: QUICK_VERIFY, VERIFY
+
+branches: 
+- # ====== Branch: Reload Page =================================
+  id: 85003974524720103
+  identification: 
+    name: Reload Page
+
+  execution: 
+    sequence: 10
+    point: After Processing
+
+  behavior: 
+    type: Page or URL (Redirect)
+    target: 
+      url: 'f?p=&APP_ID.:75:&SESSION.::&DEBUG.:::&success_msg=#SUCCESS_MSG#'
+      page: 75 # Verify Results
 

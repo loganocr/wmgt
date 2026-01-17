@@ -22,6 +22,7 @@ navigation:
 javascript: 
   function-and-global-variable-declaration: |
     var refreshingThings = 0;
+    var selectedRank = "", selectedRankClass = "";
     
     function refreshAllThings() {
         apex.submit({showWait:true});
@@ -56,6 +57,8 @@ javascript:
     		refreshingThings = 1;
     		[
     		'strokeHistogram',
+    		'courseStatsChart',
+            'topPlayersRegion',
     		'buttonPreviewJS',
     	    ].forEach((region) => apex.region(region).refresh());
     		refreshingThings = 0;
@@ -236,9 +239,13 @@ regions:
               connect by level <= 18
               minus
               select distinct h
-              from wmg_rounds_unpivot_mv
-              where course_id = :P200_COURSE_ID
-              and score = 1
+                from wmg_rounds_unpivot_mv u
+                , wmg_players p
+            where u.player_id = p.id
+              and u.player_id != 0  -- remove the curated system score
+              and u.course_id = :P200_COURSE_ID
+              and (p.rank_code = :P200_RANK_SELECTOR or :P200_RANK_SELECTOR is null)
+              and u.score = 1
           )
           select s.course_id, s.course_code, s.h
                , case :P200_FORMULA
@@ -280,6 +287,7 @@ regions:
         page-items-to-submit: 
         - P200_COURSE_ID.P200_H
         - P200_FORMULA
+        - P200_RANK_SELECTOR
 
       column-mapping: 
         label: H
@@ -452,10 +460,17 @@ regions:
           )
           , round as (
               select u.score, count(*) people, sum(count(*)) over () all_scores
-                from  wmg_rounds_unpivot_mv u
-               where u.course_id = :P200_COURSE_ID
+                from wmg_rounds_unpivot_mv u
+                   , wmg_players p
+                   , wmg_rounds r
+              where u.player_id = p.id
+                and u.player_id != 0  -- remove the curated system score
+                and u.course_id = :P200_COURSE_ID
+                and u.player_id = r.players_id
+                and u.week = r.week
+                and u.course_id = r.course_id
+                and (wmg_rank_history.get_round_effective_rank(r.id) = :P200_RANK_SELECTOR or :P200_RANK_SELECTOR is null)
                  and u.h = :P200_H
-                 and u.player_id > 0
                group by u.score
           )
           select stroke
@@ -467,12 +482,13 @@ regions:
               select s.stroke, r.people, round(r.people * 100 / all_scores,2) percent
               from  round r
                   , strokes s
-              where s.stroke = r.score (+)
+             where s.stroke = r.score (+)
           )
           order by stroke
         page-items-to-submit: 
         - P200_COURSE_ID
         - P200_H
+        - P200_RANK_SELECTOR
 
       column-mapping: 
         label: STROKE
@@ -524,6 +540,7 @@ regions:
         title: '%'
 
       value: 
+        maximum: 100
         format-scaling: None
         baseline-scaling: Zero
         scale: Linear
@@ -557,12 +574,14 @@ regions:
         and u.h = :P200_H
         and u.score = :P200_S
         and u.player_id > 0
+        and (p.rank_code = :P200_RANK_SELECTOR or :P200_RANK_SELECTOR is null)
       group by p.player_name, u.score
       order by 3 desc, p.player_name
     page-items-to-submit: 
     - P200_COURSE_ID
     - P200_H
     - P200_S
+    - P200_RANK_SELECTOR
 
   layout: 
     sequence: 130
@@ -969,7 +988,7 @@ regions:
           from (
               select u.course_id, u.h, p.rank_code, u.score, count(*) people
                 from  wmg_rounds_unpivot_mv u
-                    , wmg_players p
+                    , wmg_players_v p
                     , wmg_ranks r
                where u.player_id = p.id
                  and u.course_id = :P200_COURSE_ID
@@ -996,6 +1015,7 @@ regions:
           where b.course_id = c.course_id
             and b.rank_code = r.code
             and c.course_id = :P200_COURSE_ID
+            and (r.code = :P200_RANK_SELECTOR or :P200_RANK_SELECTOR is null)
           union all
           select '- Utopian -' week, '' player_name, best_under under_par
           from wmg_courses_v
@@ -1022,6 +1042,7 @@ regions:
     page-items-to-submit: 
     - P200_COURSE_ID
     - P200_GOALS_IND
+    - P200_RANK_SELECTOR
 
   layout: 
     sequence: 20
@@ -2944,14 +2965,14 @@ regions:
     - P200_COURSE_ID
 
   layout: 
-    sequence: 60
+    sequence: 70
     parent-region: '{options}' # 43228410746087619
     slot: BODY
     start-new-layout: false
     start-new-row: false
     column: Automatic
     new-column: true
-    column-span: 3
+    column-span: 2
 
   appearance: 
     template: Blank with Attributes
@@ -3057,6 +3078,49 @@ regions:
 
     security: 
       escape-special-characters: true
+
+- # ====== Region: {Rank Filter} ===============================
+  id: 76133611710229837
+  identification: 
+    name: '{Rank Filter}'
+    type: Static Content
+
+  layout: 
+    sequence: 40
+    parent-region: '{options}' # 43228410746087619
+    slot: BODY
+    start-new-layout: false
+    start-new-row: false
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  header-and-footer: 
+    footer-text: |
+      <br>
+      "RANK_LEGEND_SEARCH"
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      output-as: HTML
+      expand-shortcuts: false
 
 - # ====== Region: Hole Preview ================================
   id: 20769742293250454856
@@ -3813,6 +3877,36 @@ page-items:
     static-value: N
 
   session-state: 
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P200_RANK_SELECTOR =======================
+  id: 76133749678229838
+  identification: 
+    name: P200_RANK_SELECTOR
+    type: Hidden
+
+  settings: 
+    value-protected: false
+
+  layout: 
+    sequence: 10
+    region: '{Rank Filter}' # 76133611710229837
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
     storage: Per Session (Persistent)
 
   security: 
@@ -4805,6 +4899,105 @@ dynamic-actions:
       type: Item != Value
       item: P200_GOALS_IND
       value: Y
+
+- # ====== Dynamic Action: Rank Selectors ======================
+  id: 81498699534383384
+  identification: 
+    name: Rank Selectors
+
+  execution: 
+    sequence: 140
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Change
+    selection-type: jQuery Selector
+    jquery-selector: .wm-search
+
+  actions: 
+  - # ====== Action: Set Value ===================================
+    id: 76133843890229839
+    identification: 
+      action: Set Value
+
+    settings: 
+      set-type: JavaScript Expression
+      javascript-expression: selectedRank
+      suppress-change-event: false
+
+    affected-elements: 
+      selection-type: Item(s)
+      item(s): 
+      - P200_RANK_SELECTOR
+
+    execution: 
+      sequence: 30
+      event: Rank Selectors # 81498699534383384
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+      stop-execution-on-error: false
+      wait-for-result: false
+
+  - # ====== Action: Execute JavaScript Code =====================
+    id: 76133947383229840
+    identification: 
+      action: Execute JavaScript Code
+
+    settings: 
+      code: refreshHoleThings()
+
+    execution: 
+      sequence: 40
+      event: Rank Selectors # 81498699534383384
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+  - # ====== Action: Get Selected Value ==========================
+    id: 81499087370383392
+    identification: 
+      name: Get Selected Value
+      action: Execute JavaScript Code
+
+    settings: 
+      code: |
+        selectedRank = this.triggeringElement.value
+        selectedRankClass = $(this.triggeringElement).parents(".wm-search-item").find("div").attr("class").split(" ")[0]; // get the class
+        
+        if (selectedRank === "ALL") {
+          selectedRank = ""
+          selectedRankClass = ""
+        }
+        
+
+    execution: 
+      sequence: 10
+      event: Rank Selectors # 81498699534383384
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+    client-side-condition: 
+      type: JavaScript expression
+      javascript-expression: this.triggeringElement.checked
+
+  - # ====== Action: Clear Selected Value ========================
+    id: 81499563190383394
+    identification: 
+      name: Clear Selected Value
+      action: Execute JavaScript Code
+
+    settings: 
+      code: selectedRank = ""
+
+    execution: 
+      sequence: 20
+      event: Rank Selectors # 81498699534383384
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+    client-side-condition: 
+      type: JavaScript expression
+      javascript-expression: '!this.triggeringElement.checked'
 
 processes: 
 - # ====== Process: Clear on REFRESH ===========================

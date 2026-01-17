@@ -772,6 +772,54 @@ regions:
       output-as: HTML
       expand-shortcuts: false
 
+- # ====== Region: {Player Registration} =======================
+  id: 74133086174128045
+  identification: 
+    name: '{Player Registration}'
+    type: Form
+
+  source: 
+    location: Local Database
+    type: Table / View
+    table-owner: Parsing Schema
+    table-name: WMG_TOURNAMENT_PLAYER_V
+    include-rowid-column: false
+    where-clause: 'week = :P50_WEEK'
+    order-by-clause: tournament_session_created
+    page-items-to-submit: 
+    - P50_WEEK
+
+  layout: 
+    sequence: 65
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Blank with Attributes
+    template-options: 
+    - '#DEFAULT#'
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    edit: 
+      enabled: false
+
 - # ====== Region: {Player & Round Details} ====================
   id: 40825883820734223932
   identification: 
@@ -817,7 +865,7 @@ regions:
     type: Static Content
 
   layout: 
-    sequence: 65
+    sequence: 75
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -1986,6 +2034,239 @@ page-items:
   layout: 
     sequence: 90
     region: '{Player & Round Details}' # 40825883820734223932
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P50_PLAYER_ID ============================
+  id: 76124777954220599
+  identification: 
+    name: P50_PLAYER_ID
+    type: Hidden
+
+  settings: 
+    value-protected: true
+
+  layout: 
+    sequence: 30
+    region: '{Player Registration}' # 74133086174128045
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    form-region: '{Player Registration}' # 74133086174128045
+    column: PLAYER_ID
+    data-type: NUMBER
+    query-only: true
+    primary-key: true
+
+  default: 
+    type: Item
+    item: P50_PLAYERS_ID
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Request (Memory Only)
+
+  security: 
+    session-state-protection: Checksum Required - Session Level
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P50_TIME_SLOT ============================
+  id: 76124810071220600
+  identification: 
+    name: P50_TIME_SLOT
+    type: Hidden
+
+  settings: 
+    value-protected: true
+
+  layout: 
+    sequence: 40
+    region: '{Player Registration}' # 74133086174128045
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    form-region: '{Player Registration}' # 74133086174128045
+    column: TIME_SLOT
+    data-type: VARCHAR2
+    query-only: true
+    primary-key: false
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Request (Memory Only)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P50_ROOM_NO ==============================
+  id: 76124974389220601
+  identification: 
+    name: P50_ROOM_NO
+    type: Hidden
+
+  settings: 
+    value-protected: true
+
+  layout: 
+    sequence: 50
+    region: '{Player Registration}' # 74133086174128045
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    form-region: '{Player Registration}' # 74133086174128045
+    column: ROOM_NO
+    data-type: NUMBER
+    query-only: true
+    primary-key: false
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Request (Memory Only)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P50_TOURNAMENT_PLAYER_ID_1 ===============
+  id: 76128961052220641
+  identification: 
+    name: P50_TOURNAMENT_PLAYER_ID_1
+    type: Hidden
+
+  settings: 
+    value-protected: true
+
+  layout: 
+    sequence: 430
+    region: '{Player Registration}' # 74133086174128045
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    form-region: '{Player Registration}' # 74133086174128045
+    column: TOURNAMENT_PLAYER_ID
+    data-type: NUMBER
+    query-only: true
+    primary-key: false
+
+  default: 
+    type: Item
+    item: P50_TOURNAMENT_PLAYER_ID
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Request (Memory Only)
+
+  security: 
+    session-state-protection: Checksum Required - Session Level
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P50_TOURNAMENT_PLAYER_CREATED ============
+  id: 76129083967220642
+  identification: 
+    name: P50_TOURNAMENT_PLAYER_CREATED
+    type: Hidden
+
+  settings: 
+    value-protected: true
+
+  layout: 
+    sequence: 440
+    region: '{Player Registration}' # 74133086174128045
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    form-region: '{Player Registration}' # 74133086174128045
+    column: TOURNAMENT_PLAYER_CREATED
+    data-type: TIMESTAMP WITH LOCAL TIME ZONE
+    query-only: true
+    primary-key: false
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Request (Memory Only)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P50_PREV_PLAYER_ID =======================
+  id: 76130796075229808
+  identification: 
+    name: P50_PREV_PLAYER_ID
+    type: Hidden
+
+  settings: 
+    value-protected: true
+
+  layout: 
+    sequence: 450
+    region: '{Player Registration}' # 74133086174128045
+    slot: BODY
+
+  advanced: 
+    warn-on-unsaved-changes: Page Default
+
+  source: 
+    type: Null
+    used: Only when current value in session state is null
+
+  session-state: 
+    data-type: VARCHAR2
+    storage: Per Session (Persistent)
+
+  security: 
+    session-state-protection: Unrestricted
+    store-value-encrypted-in-session-state: true
+    restricted-characters: All characters can be saved.
+
+- # ====== Page Item: P50_NEXT_PLAYER_ID =======================
+  id: 76130811380229809
+  identification: 
+    name: P50_NEXT_PLAYER_ID
+    type: Hidden
+
+  settings: 
+    value-protected: true
+
+  layout: 
+    sequence: 460
+    region: '{Player Registration}' # 74133086174128045
     slot: BODY
 
   advanced: 
@@ -7129,6 +7410,82 @@ buttons:
     item: P50_VERIFIED_FLAG
     value: Y
 
+- # ====== Button: PREVIOUS ====================================
+  id: 74132783203128042
+  identification: 
+    button-name: PREVIOUS
+    label: Previous
+
+  layout: 
+    sequence: 10
+    region: '{Buttons}' # 42098139219682719033
+    slot: PREVIOUS
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Icon
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+    icon: fa-chevron-left
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:50:&SESSION.::&DEBUG.:50:P50_PLAYERS_ID,P50_PREV_PAGE_ID:&P50_PREV_PLAYER_ID.,&P50_PREV_PAGE_ID.'
+      page: 50 # Enter Rounds
+      clear-cache: 50
+      values: 
+        p50_players_id: '&P50_PREV_PLAYER_ID.'
+        p50_prev_page_id: '&P50_PREV_PAGE_ID.'
+
+    warn-on-unsaved-changes: Do Not Check
+
+  security: 
+    authorization-scheme: Tournament Admin # 55902033226819493948
+
+- # ====== Button: NEXT ========================================
+  id: 76130914486229810
+  identification: 
+    button-name: NEXT
+    label: Next
+
+  layout: 
+    sequence: 20
+    region: '{Buttons}' # 42098139219682719033
+    slot: PREVIOUS
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Icon
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+    icon: fa-chevron-right
+
+  behavior: 
+    action: Redirect to Page in this Application
+    target: 
+      url: 'f?p=&APP_ID.:50:&SESSION.::&DEBUG.:50:P50_PLAYERS_ID,P50_PREV_PAGE_ID:&P50_NEXT_PLAYER_ID.,&P50_PREV_PAGE_ID.'
+      page: 50 # Enter Rounds
+      clear-cache: 50
+      values: 
+        p50_players_id: '&P50_NEXT_PLAYER_ID.'
+        p50_prev_page_id: '&P50_PREV_PAGE_ID.'
+
+    warn-on-unsaved-changes: Do Not Check
+
+  security: 
+    authorization-scheme: Tournament Admin # 55902033226819493948
+
 - # ====== Button: ADD =========================================
   id: 15533023413906445159
   identification: 
@@ -7622,10 +7979,10 @@ processes:
     type: Request is contained in Value
     value: CREATE,CREATE_AGAIN,SAVE,DELETE,APPLY_CHANGES_RESULT
 
-- # ====== Process: Sync MV ====================================
+- # ====== Process: Sync MV & Verify Cards =====================
   id: 36052960626175840
   identification: 
-    name: Sync MV
+    name: Sync MV & Verify Cards
     type: Execution Chain
     execution-chain: None
 
@@ -7654,7 +8011,7 @@ processes:
   identification: 
     name: Sync  wmg_rounds_unpivot_mv
     type: Execute Code
-    execution-chain: Sync MV # 36052960626175840
+    execution-chain: Sync MV & Verify Cards # 36052960626175840
 
   source: 
     location: Local Database
@@ -7669,7 +8026,7 @@ processes:
   identification: 
     name: First Timeslot Finished Notification
     type: Execute Code
-    execution-chain: Sync MV # 36052960626175840
+    execution-chain: Sync MV & Verify Cards # 36052960626175840
 
   source: 
     location: Local Database
@@ -7737,6 +8094,79 @@ processes:
   security: 
     authorization-scheme: Contribution Rights # 46995203801871514425
 
+- # ====== Process: Initialize form {Player Registration} ======
+  id: 74133197855128046
+  identification: 
+    name: Initialize form {Player Registration}
+    type: Form - Initialization
+    execution-chain: None
+    form-region: '{Player Registration}' # 74133086174128045
+
+  settings: 
+    next-primary-key-item(s): 
+    - P50_NEXT_PLAYER_ID
+    previous-primary-key-item(s): 
+    - P50_PREV_PLAYER_ID
+
+  execution: 
+    sequence: 30
+    point: Before Header
+    run-process: Once Per Page Visit (default)
+
+  security: 
+    authorization-scheme: Tournament Admin # 55902033226819493948
+
+- # ====== Process: Automatic Verification =====================
+  id: 83256898877426444
+  identification: 
+    name: Automatic Verification
+    type: Execute Code
+    execution-chain: Sync MV & Verify Cards # 36052960626175840
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      declare
+          l_result wmg_verification_engine.verification_result_rec;
+      begin
+          wmg_verification_engine.verify_player(
+              p_tournament_session_id => :G_CURRENT_SESSION_ID
+            , p_player_id             => :P50_PLAYERS_ID
+            , p_room_name             => :P50_ROOM_NAME
+            , x_verification_result   => l_result
+          );
+      
+          logger.log('.. l_result.tournament_session_id:' || l_result.tournament_session_id);
+          logger.log('.. l_result.room_no:' || l_result.room_no);
+          logger.log('.. l_result.player_id:' || l_result.player_id);
+          logger.log('.. l_result.card_run_id:' || l_result.card_run_id);
+          logger.log('.. l_result.verification_status:' || l_result.verification_status);
+          logger.log('.. l_result.mismatch_details:' || l_result.mismatch_details);
+      
+          if l_result.verification_status = 'SUCCESS' and :G_PLAYER_ID is not null then
+              wmg_verification_engine.update_verification_status(
+                  p_tournament_session_id => :G_CURRENT_SESSION_ID
+                , p_player_id             => :G_PLAYER_ID
+                , p_verified_flag         => 'Y'
+              );
+          end if;
+      exception
+        when others then
+          logger.log_error('Unexpected error during verification');    
+      end;
+      
+
+  execution: 
+    sequence: 30
+
+  server-side-condition: 
+    type: Item is NOT NULL
+    item: G_PLAYER_ID
+
+  comments: 
+    comments: This is the automatic verification of scorecards against the imported AI cards.
+
 - # ====== Process: Initialize form Round - Hard ===============
   id: 15532716800835442102
   identification: 
@@ -7746,7 +8176,7 @@ processes:
     form-region: '&P50_HARD_COURSE.' # 47585929783602469251
 
   execution: 
-    sequence: 50
+    sequence: 60
     point: Before Header
     run-process: Once Per Page Visit (default)
 
@@ -7759,7 +8189,7 @@ processes:
     form-region: '&P50_EASY_COURSE.' # 62519776936965148717
 
   execution: 
-    sequence: 20
+    sequence: 40
     point: Before Header
     run-process: Once Per Page Visit (default)
 
@@ -7888,7 +8318,7 @@ processes:
       
 
   execution: 
-    sequence: 10
+    sequence: 20
     point: Before Header
     run-process: Once Per Page Visit (default)
 
@@ -7927,7 +8357,7 @@ processes:
     form-region: '{Easy Course Strokes}' # 157289116684367499459
 
   execution: 
-    sequence: 30
+    sequence: 50
     point: Before Header
     run-process: Once Per Page Visit (default)
 
@@ -8003,7 +8433,7 @@ processes:
     form-region: '{Hard Course Strokes}' # 157288953631326779086
 
   execution: 
-    sequence: 60
+    sequence: 70
     point: Before Header
     run-process: Once Per Page Visit (default)
 

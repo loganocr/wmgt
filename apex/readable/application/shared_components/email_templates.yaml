@@ -57,6 +57,10 @@
       # :golfer_1f3cc: **THE WEEKLY RECAP REPORT** :golfer_1f3cc:
       ***The Weekly #SEASON# W#WEEK_NUM# Recap***
       
+      ** #COURSES_NAME# **
+      
+      Total Players: #TOTAL_PLAYERS#
+      
       ---------------------------------
       ⛳ **PODIUM PLACEMENTS**
       
@@ -131,7 +135,7 @@
     static-id: TOURNAMENT_RECAP
 
   subscription: 
-    version-number: 1847972603
+    version-number: 2552921556
 
 - # ====== Email Template: TOURNAMENT COURSES ==================
   id: 32439359551733976

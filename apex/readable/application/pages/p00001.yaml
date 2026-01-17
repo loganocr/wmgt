@@ -307,8 +307,8 @@ css:
     
         }
     
-        td[headers="AVATAR"],
-        th#AVATAR {display: none;}
+        td[headers="AS_OF"], td[headers="SUCCESS_COUNT"], td[headers="AVATAR"],
+        th#AS_OF, th#SUCCESS_COUNT, th#AVATAR {display: none;}
     
         td.t-Report-cell[headers="PLAYER_NAME"] {
             overflow: hidden;
@@ -322,11 +322,11 @@ css:
        {
            --ut-report-cell-padding-x: .3rem;
            --ut-report-header-cell-padding-x: .2rem;
-      }
-      #COUNTRY_CODE, td[headers="COUNTRY_CODE"] {
+       }
+       #COUNTRY_CODE, td[headers="COUNTRY_CODE"] {
            --ut-report-cell-padding-x: .4rem;
            --ut-report-header-cell-padding-x: .1rem;
-      }
+       }
     }
     
     #recentReg, #weekResults {
@@ -1323,7 +1323,7 @@ regions:
     type: Static Content
 
   layout: 
-    sequence: 39
+    sequence: 49
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -1364,7 +1364,7 @@ regions:
     type: Static Content
 
   layout: 
-    sequence: 49
+    sequence: 59
     parent-region: No Parent
     slot: BODY
     start-new-layout: false
@@ -5266,16 +5266,7 @@ regions:
     type: Expression
     language: PL/SQL
     pl/sql-expression: |
-      :G_PLAYER_ID in (22,24,34,60,85,226
-      , 56 -- G0nzo
-      , 662 -- nerd
-      , 3826 -- zonk
-      , 6946 -- jen
-      , 6945 -- karma
-      , 7490 -- OpusMcGraw
-      , 7726 -- drew
-      , 9366 -- eyerie
-      )
+      :G_PLAYER_ID is not null 
       or apex_authorization.is_authorized (p_authorization_name => 'Tournament Admin' )
 
   server-cache: 
@@ -8851,7 +8842,7 @@ buttons:
   id: 36326027638635118
   identification: 
     button-name: BADGES
-    label: My Badges
+    label: My Career
 
   layout: 
     sequence: 20
@@ -9338,6 +9329,101 @@ buttons:
   behavior: 
     action: Defined by Dynamic Action
     execute-validations: false
+
+- # ====== Button: SYNC_REST_SOURCES ===========================
+  id: 85005608015720120
+  identification: 
+    button-name: SYNC_REST_SOURCES
+    label: Sync Sources
+
+  layout: 
+    sequence: 10
+    region: Bot Status # 85004515474720109
+    slot: COPY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Icon
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+    icon: fa-refresh
+
+  behavior: 
+    action: Defined by Dynamic Action
+    execute-validations: true
+
+- # ====== Button: VOTE_REFRESH ================================
+  id: 91800584773011105
+  identification: 
+    button-name: VOTE_REFRESH
+    label: Refresh Results
+
+  layout: 
+    sequence: 10
+    region: Season Courses Votes # 85004434021720108
+    slot: EDIT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Icon
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--simple
+    icon: fa-refresh
+
+  behavior: 
+    action: Defined by Dynamic Action
+    execute-validations: false
+
+  server-side-condition: 
+    type: Expression
+    language: PL/SQL
+    pl/sql-expression: |
+      :G_PLAYER_ID is not null 
+      or apex_authorization.is_authorized (p_authorization_name => 'Tournament Admin' )
+
+- # ====== Button: DISMISS_AGE_RESTRICTED ======================
+  id: 92657430186565717
+  identification: 
+    button-name: DISMISS_AGE_RESTRICTED
+    label: Ok, Got it, hide this!
+
+  layout: 
+    sequence: 10
+    region: '{age restricted how to}' # 92657971688565722
+    slot: NEXT
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    button-template: Text with Icon
+    hot: false
+    template-options: 
+    - '#DEFAULT#'
+    - t-Button--iconRight
+    icon: fa-check
+
+  behavior: 
+    action: Submit Page
+    execute-validations: false
+    show-processing: false
+    warn-on-unsaved-changes: Do Not Check
+
+  security: 
+    authorization-scheme: MODEL.LOV.MUST_NOT_BE_PUBLIC_USER
 
 dynamic-actions: 
 - # ====== Dynamic Action: Highlight Selection =================
@@ -9904,6 +9990,85 @@ dynamic-actions:
       fire-when-event-result-is: True
       fire-on-initialization: false
 
+- # ====== Dynamic Action: Refresh REST Sources ================
+  id: 85005885039720122
+  identification: 
+    name: Refresh REST Sources
+
+  execution: 
+    sequence: 140
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Click
+    selection-type: Button
+    button: SYNC_REST_SOURCES # 85005608015720120
+
+  actions: 
+  - # ====== Action: Execute Server-side Code ====================
+    id: 85005971851720123
+    identification: 
+      action: Execute Server-side Code
+
+    settings: 
+      language: PE.PROPERTY.SOURCE_SNIPPET_LANG.LOV.PLSQL.D
+      pl/sql-code: wmg_rest_api.refresh_all_sources;
+
+    execution: 
+      sequence: 10
+      event: Refresh REST Sources # 85005885039720122
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+      stop-execution-on-error: true
+      wait-for-result: true
+
+  - # ====== Action: Refresh =====================================
+    id: 85006047322720124
+    identification: 
+      action: Refresh
+
+    affected-elements: 
+      selection-type: Region
+      region: Bot Status # 85004515474720109
+
+    execution: 
+      sequence: 20
+      event: Refresh REST Sources # 85005885039720122
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
+- # ====== Dynamic Action: Refresh Votes =======================
+  id: 91800616741011106
+  identification: 
+    name: Refresh Votes
+
+  execution: 
+    sequence: 150
+    event-scope: Static
+    type: Immediate
+
+  when: 
+    event: Click
+    selection-type: Button
+    button: VOTE_REFRESH # 91800584773011105
+
+  actions: 
+  - # ====== Action: Refresh =====================================
+    id: 91800796115011107
+    identification: 
+      action: Refresh
+
+    affected-elements: 
+      selection-type: Region
+      region: '{Voting: Logged In Player}' # 71049005439388616
+
+    execution: 
+      sequence: 10
+      event: Refresh Votes # 91800616741011106
+      fire-when-event-result-is: True
+      fire-on-initialization: false
+
 computations: 
 - # ====== Computation: G_CURRENT_SESSION_ID ===================
   id: 2325269597982905530
@@ -10104,6 +10269,31 @@ processes:
   configuration: 
     build-option: Commented Out # 46995003406591514325
 
+- # ====== Process: Dismiss AGE_RESTRICTED =====================
+  id: 92657035168565713
+  identification: 
+    name: Dismiss AGE_RESTRICTED
+    type: Execute Code
+    execution-chain: None
+
+  source: 
+    location: Local Database
+    language: PL/SQL
+    pl/sql-code: |
+      logger.log('Running: Dismiss AGE_RESTRICTED');
+      apex_util.set_preference('NO_AGE_RESTRICTED','Y');
+
+  execution: 
+    sequence: 40
+    point: Processing
+    run-process: Once Per Page Visit (default)
+
+  error: 
+    display-location: Inline in Notification
+
+  security: 
+    authorization-scheme: MODEL.LOV.MUST_NOT_BE_PUBLIC_USER
+
 branches: 
 - # ====== Branch: View Week ===================================
   id: 17400398573035198
@@ -10149,7 +10339,15 @@ branches:
       select *
       from wmg_player_moderation m
       where m.player_id = :G_PLAYER_ID
-       and m.banned_flag = 'Y'
+       and (
+          m.banned_flag = 'Y'
+        or (  m.timeout_flag = 'Y' 
+          and m.timeout_tournament_id in (select tournament_id from wmg_tournament_sessions where id = :G_CURRENT_SESSION_ID)
+         )
+        or (  m.timeout_flag = 'Y' 
+          and m.timeout_end_date < current_timestamp 
+         )
+       )
        and m.active_ind = 'Y'
 
   security: 

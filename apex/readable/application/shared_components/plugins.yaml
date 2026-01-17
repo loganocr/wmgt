@@ -4949,6 +4949,99 @@
     settings: 
       type: Link
 
+- # ====== Plugin: Calendar Heatmap ============================
+  id: 90114188634936581
+  identification: 
+    name: Calendar Heatmap
+    internal-name: MULEDEV.CALENDAR_HEATMAP_REGION
+    type: Region
+
+  advanced: 
+    quick-pick: false
+
+  subscription: 
+    version-number: 2421007791
+
+  callbacks: 
+    api-interface: Function
+    render-procedure/function-name: apex_cal_heatmap_plugin_pkg.render_plugin
+
+  standard-attributes: 
+    attributes: 
+    - Region Source is SQL Statement [Deprecated]
+
+  custom-attributes: 
+    substitute-attribute-values: true
+
+  information: 
+    version: 1.1
+    about-url: 'https://github.com/mortenbra/apex-plugins'
+
+  standard-attributes: 
+  - # ====== Standard Attribute: SOURCE_SQL ======================
+    id: 90115265805936579
+    identification: 
+      name: SOURCE_SQL
+
+    value: 
+      required: true
+
+    settings: 
+      minimum-columns: 2
+      maximum-columns: 4
+
+    examples: 
+      examples: |
+        select trunc(log_date) as the_date, count(*) as the_count, 'foo' as the_tooltip, null as the_link
+        from log_table
+        group by trunc(log_date)
+
+  custom-attributes: 
+  - # ====== Custom Attribute: Show Legend =======================
+    id: 90114443923936581
+    identification: 
+      static-id: attribute_01
+      attribute: 1
+      name: Show Legend
+      scope: Component
+
+    layout: 
+      sequence: 10
+
+    settings: 
+      type: Yes/No
+      common: true
+      show-in-wizard: true
+      required: false
+      translatable: false
+
+    default: 
+      value: N
+
+  - # ====== Custom Attribute: End Date ==========================
+    id: 90114817284936580
+    identification: 
+      static-id: attribute_02
+      attribute: 2
+      name: End Date
+      scope: Component
+
+    layout: 
+      sequence: 20
+
+    settings: 
+      type: PL/SQL Function Body Returning BOOLEAN
+      common: true
+      show-in-wizard: true
+      required: true
+      translatable: false
+
+    default: 
+      value: return to_char(sysdate, 'YYYYMMDD');
+
+    help: 
+      help-text: Specify the end date, in the format of YYYYMMDD, that the plugin will use. From this end date, the plugin will calculate a start date of end_date - 365 days.
+
 - # ====== Plugin: UC - Drag and Drop ==========================
   id: 151389359947781016
   identification: 

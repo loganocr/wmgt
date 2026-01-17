@@ -910,6 +910,8 @@ regions:
               union all
               select '02' slot, 0 day_offset from dual
               union all
+              select '06' slot, 0 day_offset from dual
+              union all
               select '18' slot, 0 day_offset from dual
           )
       )
@@ -2638,17 +2640,20 @@ processes:
         update
            set time_slot = np.time_slot
              , active_ind = np.active_ind
+             , source = 'WEB'
       when not matched then
         insert (
             tournament_session_id
           , player_id
           , time_slot
+          , source
           , active_ind
         )
         values (
             :G_CURRENT_SESSION_ID
           , :P30_PLAYER_ID
           , apex_application.g_f01(1)
+          , 'WEB'
           , :P30_ACTIVE_IND
         );
       
@@ -2664,6 +2669,9 @@ processes:
             and tp.tournament_session_id = :G_CURRENT_SESSION_ID
             and p.id = :P30_PLAYER_ID
             and tp.active_ind = 'Y';
+      
+          -- allow the player to vote in this session righ away
+          :G_VOTING_ALLOWED := 'YES';
          exception
           when no_data_found then
             -- this should not happen but lets protect

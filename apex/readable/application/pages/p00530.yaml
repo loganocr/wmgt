@@ -58,6 +58,82 @@ server-cache:
   caching: Disabled
 
 regions: 
+- # ====== Region: Registrations ===============================
+  id: 85006681392720130
+  identification: 
+    name: Registrations
+    type: Calendar Heatmap
+
+  source: 
+    sql-query: |
+      select registration_day, players, to_char(players) tooltip
+      from (
+          select trunc(created_on) registration_day, count(*) players
+          from wmg_tournament_players p
+          where tournament_session_id in (
+              select id
+              from  wmg_tournament_sessions
+             where tournament_id = :P530_ID
+          )
+          group by trunc(created_on) 
+      )
+
+  layout: 
+    sequence: 40
+    parent-region: No Parent
+    slot: BODY
+    start-new-layout: false
+    start-new-row: true
+    column: Automatic
+    new-column: true
+    column-span: Automatic
+
+  appearance: 
+    template: Standard
+    template-options: 
+    - '#DEFAULT#'
+    - t-Region--scrollBody
+    render-components: Above Content
+
+  accessibility: 
+    use-landmark: true
+    landmark-type: Template Default
+
+  advanced: 
+    region-display-selector: false
+    exclude-title-from-translation: false
+
+  server-side-condition: 
+    type: Rows returned
+    sql-query: |2
+              select 1
+              from  wmg_tournament_sessions
+             where tournament_id = :P530_ID
+              and session_date >= to_date('20230121', 'YYYYMMDD')
+
+  server-cache: 
+    caching: Disabled
+
+  customization: 
+    customizable: Not Customizable By End Users
+
+  attributes: 
+    settings: 
+      show-legend: true
+      end-date: |
+        declare
+        l_end_date date;
+        begin
+        select max(session_date)
+        into l_end_date
+                from  wmg_tournament_sessions
+               where tournament_id = :P530_ID;
+          return to_char(l_end_date + 7, 'YYYYMMDD');
+         exception 
+         when NO_DATA_FOUND then
+           return to_char(sysdate, 'YYYYMMDD');
+         end;
+
 - # ====== Region: Search ======================================
   id: 56158011469303236508
   identification: 
@@ -1307,9 +1383,9 @@ regions:
 
     link: 
       target: 
-        url: 'f?p=&APP_ID.:532:&SESSION.::&DEBUG.:532:P532_ID:#ID#'
+        url: 'f?p=&APP_ID.:532:&SESSION.::&DEBUG.:RP,532:P532_ID:#ID#'
         page: 532 # Tournament Sessions
-        clear-cache: 532
+        clear-cache: RP,532
         values: 
           p532_id: '#ID#'
 
@@ -1582,7 +1658,7 @@ regions:
     html-code: No Record Selected
 
   layout: 
-    sequence: 70
+    sequence: 50
     parent-region: No Parent
     slot: BODY
     start-new-layout: false

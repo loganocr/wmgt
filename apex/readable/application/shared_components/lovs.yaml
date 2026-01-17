@@ -29,7 +29,7 @@
     name: ROOM_NAMES
 
   subscription: 
-    version-number: 1
+    version-number: 2407885467
 
   source: 
     location: Local Database
@@ -39,7 +39,7 @@
       from (
           select level l
           from dual
-          connect by level < 10
+          connect by level < 40
       )
 
   column-mapping: 
