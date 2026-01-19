@@ -930,7 +930,7 @@ begin
                       , wmg_tournament_sessions ts3
                   where ts3.week = u3.week
                     and ts3.id = p_tournament_session_id
-                    and u3.score > 1 -- non-ace score
+                 having min(u3.score) > 1 -- non-ace score
                   group by u3.course_id, u3.h
            )
           having count(*) <= 3  -- only when less than 3 people got it
