@@ -1,10 +1,26 @@
 # WMGT - Walkabout Mini Golf Tournament app
 
-Application for running and analysising the weekly [Walkabout Mini Golf](https://www.mightycoconut.com/minigolf) VR game tournaments. 
+Application for running and analysing the weekly [Walkabout Mini Golf](https://www.mightycoconut.com/minigolf) VR game tournaments. 
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Z8Z5NO80A)
 
 [MyWMGT](https://MyWMGT.com)
+
+## Documentation
+
+### For Staff & Volunteers
+
+- **[Onboarding Guide](docs/ONBOARDING.md)** — Start here! Overview of roles and how WMGT works
+- **[Contributor Guide](docs/guide-contributor.md)** — Score verification procedures
+- **[Tournament Admin Guide](docs/guide-tournament-admin.md)** — Running weekly tournaments
+- **[Administrator Guide](docs/guide-administrator.md)** — System administration
+- **[Quick Reference](docs/QUICK_REFERENCE.md)** — Cheat sheet for common tasks
+
+### Other Documentation
+
+- **[Tournament Rules](docs/tournament_rules.md)** — Official rules for players
+- **[Discord Bot API](docs/discord_bot_api.md)** — Bot integration documentation
+- **[Courses List](docs/courses-list.md)** — All available courses
 
 ## Tech Details
 
