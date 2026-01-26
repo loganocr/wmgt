@@ -2,21 +2,21 @@
 
 A handy cheat sheet for common tasks and navigation.
 
-## Key Pages
+## Key Application Pages
 
-| Page # | Name | Who Uses It | Purpose |
-|--------|------|-------------|---------|
-| 1 | Home | Everyone | Main landing page |
-| 30 | Registration | Players | Register for tournaments |
-| 40 | Room Assignments | Players | View room assignments |
-| 50 | Enter Rounds | Players | Submit scores |
-| 60 | Weekly Results | Everyone | View tournament results |
-| 61 | Season Results | Everyone | View season standings |
-| 75 | **Verify Results** | Contributors+ | Score verification |
-| 500 | **Tournament Admin** | Admins | Main admin dashboard |
-| 530 | Sessions | Admins | Manage seasons |
-| 532 | Tournament Sessions | Admins | Create/edit weeks |
-| 10041 | Manage User Access | Administrators | Grant roles |
+| Page # | Name             | Who Uses It | Purpose |
+|-------:|------------------|-------------|---------|
+| 1      | Home             | Everyone    | Main landing page |
+| 30     | Registration     | Players     | Register for tournaments |
+| 40     | Room Assignments | Players     | View room assignments |
+| 50     | Enter Rounds     | Players     | Submit scores |
+| 60     | Weekly Results   | Everyone    | View tournament results |
+| 61     | Season Results   | Everyone    | View season standings |
+| 75     | **Verify Results** | Contributors+ | Score verification |
+| 500    | **Tournament Admin** | Admins | Main admin dashboard |
+| 530    | Sessions         | Admins | Manage seasons |
+| 532    | Tournament Sessions | Admins | Create/edit weeks |
+| 10041  | Manage User Access | Administrators | Grant roles |
 
 ## Weekly Checklist
 
