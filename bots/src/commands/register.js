@@ -307,7 +307,7 @@ async function handleTimeSlotSelection(interaction, session, userTimezone, tourn
           inline: true
         }
       )
-      .setFooter({ text: 'You are commiting to plating at this time. Make sure the time works for you!' });
+      .setFooter({ text: 'You are committing to playing at this time. Make sure the time works for you!' });
 
     // Create confirmation buttons
     const confirmButton = new ButtonBuilder()
