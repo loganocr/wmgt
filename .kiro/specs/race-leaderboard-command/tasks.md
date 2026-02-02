@@ -79,7 +79,7 @@ This implementation plan creates a new `/courserace` Discord bot command by maxi
   - Test approval status indicators
   - _Requirements: 1.1, 1.2, 2.1, 6.1, 6.2, 6.3_
 
-- [-] 3. Verify autocomplete and shared functionality
+- [x] 3. Verify autocomplete and shared functionality
   - Verify course autocomplete works with courserace command (inherited from parent)
   - Verify fallback courses are available when API is unavailable (inherited from parent)
   - Verify authentication token management works (inherited from parent)
@@ -107,7 +107,7 @@ This implementation plan creates a new `/courserace` Discord bot command by maxi
   - **Property 12: Text Display Truncation**
   - **Validates: Requirements 9.3, 9.4**
 
-- [ ] 5. Integration testing and validation
+- [x] 5. Integration testing and validation
   - Test end-to-end flow: command → service → API → display
   - Verify race API endpoint is called correctly
   - Verify time_behind_prepared values are displayed correctly
