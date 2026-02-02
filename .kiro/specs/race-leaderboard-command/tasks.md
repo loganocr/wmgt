@@ -6,7 +6,7 @@ This implementation plan creates a new `/courserace` Discord bot command by maxi
 
 ## Tasks
 
-- [ ] 1. Create RaceLeaderboardService extending CourseLeaderboardService
+- [x] 1. Create RaceLeaderboardService extending CourseLeaderboardService
   - Create `bots/src/services/RaceLeaderboardService.js`
   - Extend `CourseLeaderboardService` to inherit all authentication, caching, and error handling
   - Override `getRaceLeaderboard()` method to use `/leaderboards/racecourse` endpoint
