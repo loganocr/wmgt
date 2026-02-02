@@ -931,6 +931,7 @@ begin
     p_tournament_session_id => l_session_id
   , p_player_id   => l_discord_user.player_id
   , p_action      => ''UNREGISTER''
+  , p_source      => ''API''
   );
   
   commit;

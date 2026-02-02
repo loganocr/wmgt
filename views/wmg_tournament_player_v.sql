@@ -38,6 +38,7 @@ select t.id                              tournament_id
      , tp.verified_by
      , tp.verified_on
      , tp.active_ind                     active_ind
+     , tp.source                         tournament_player_source
      , tp.created_on                     tournament_player_created
      , tp.created_by                     tournament_player_created_by
      , tp.updated_on                     tournament_player_updated
