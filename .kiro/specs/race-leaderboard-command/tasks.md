@@ -39,7 +39,7 @@ This implementation plan creates a new `/courserace` Discord bot command by maxi
   - Test invalid entry filtering
   - _Requirements: 3.4, 3.5, 4.2, 4.3, 4.4_
 
-- [ ] 2. Create courserace command handler
+- [x] 2. Create courserace command handler
   - Copy `bots/src/commands/course.js` to `bots/src/commands/courserace.js`
   - Change command name from 'course' to 'courserace'
   - Change command description to 'Display race leaderboard times for a selected course'
