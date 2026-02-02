@@ -19,6 +19,7 @@ export const config = {
       setTimezone: '/tournament/players/timezone',
       votes: '/tournament/votes',
       leaderboards: '/leaderboards/course',
+      raceleaderboards: '/leaderboards/racecourse',
       courses: '/tournament/courses',
       oauth: '/oauth/token'
     },

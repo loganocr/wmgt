@@ -43,7 +43,7 @@ export class RaceLeaderboardService extends CourseLeaderboardService {
           });
 
           // Build endpoint URL for race leaderboard
-          const endpoint = `${config.api.endpoints.leaderboards}/racecourse`;
+          const endpoint = `${config.api.endpoints.raceleaderboards}/${normalizedCourseCode}`;
 
           // Add course code and discord_id as query parameters
           const params = {
@@ -445,7 +445,8 @@ export class RaceLeaderboardService extends CourseLeaderboardService {
           const timeDisplay = userEntry.roundSpeedPrepared;
           const timeBehindDisplay = userEntry.timeBehindPrepared !== null ? ` (+${userEntry.timeBehindPrepared})` : '';
           const statusText = userEntry.isApproved ? '' : ' (Personal)';
-          userSummaryLines.push(`Position ${userEntry.position}: ${timeDisplay}${timeBehindDisplay}${statusText}`);
+          // userSummaryLines.push(`Position ${userEntry.position}: ${timeDisplay}${timeBehindDisplay}${statusText}`);
+          userSummaryLines.push(`Position ${userEntry.position}: ${timeDisplay}${statusText}`);
         });
 
         embed.fields.push({
