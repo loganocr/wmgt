@@ -16,6 +16,7 @@
 2. **Copy results and use this prompt:**
    ```
    Analyze this tournament data for week [WEEK_CODE] and create a comprehensive report following the template structure. Focus on finding the Player of the Week (outside top 3), interesting rank overperformances, country insights, and engaging storylines.
+   Use player_name from wmg_players_v for mentions and do NOT include @ tags (Discord issue).
 
    [PASTE SQL RESULTS HERE]
    ```

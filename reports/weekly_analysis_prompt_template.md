@@ -42,6 +42,7 @@ Include analysis of:
 - **Include specific player callouts** with their achievements
 - **Compare performance vs rank expectations**
 - **Look for interesting patterns** in country/rank performance
+- **Use player_name from wmg_players_v for mentions and do NOT include @ tags** (Discord issue)
 
 ### Tone:
 - Enthusiastic and engaging
