@@ -1,87 +1,136 @@
-# Implementation Plan
+# Implementation Plan: Discord Tournament Registration Button
 
-- [x] 1. Set up Discord bot project structure and core dependencies
-  - Create Node.js project with package.json and required dependencies (discord.js, moment-timezone, axios)
-  - Set up project directory structure for commands, services, and configuration
-  - Create environment configuration for Discord bot token and API endpoints
-  - _Requirements: 1.1, 5.1_
+## Overview
 
-- [x] 2. Implement Discord bot foundation and command registration
-  - Create main bot application with Discord.js client initialization
-  - Implement slash command registration system for /register, /unregister, /mystatus, /timezone commands
-  - Set up basic command handler with interaction response framework
-  - _Requirements: 1.1, 1.2, 3.1, 6.1_
+Implement a persistent Discord embed message with a "Register Now" button that serves as the primary entry point for tournament registration. The implementation builds on the existing `RegistrationService` and `TimezoneService`, adding a `RegistrationMessageManager` for message lifecycle management, a `RegistrationButtonHandler` for interaction flows, and a `/setup-wmgt-registration` admin command.
 
-- [x] 3. Create timezone service for time conversion functionality
-  - Implement TimezoneService class with UTC to local time conversion methods
-  - Add timezone validation using moment-timezone library
-  - Create time display formatting that shows both UTC and local times
-  - Write unit tests for timezone conversion accuracy across major timezones
-  - _Requirements: 2.1, 2.2, 2.3, 2.4, 7.1, 7.3, 7.5_
+## Tasks
 
-- [x] 4. Build registration service for API communication
-  - Create RegistrationService class with HTTP client for backend API calls
-  - Implement getCurrentTournament method to fetch active tournaments and sessions
-  - Add registerPlayer method that sends Discord user data and registration details
-  - Implement unregisterPlayer method for removing tournament registrations
-  - Add getPlayerRegistrations method to fetch user's current registrations
-  - _Requirements: 1.3, 3.2, 5.2, 5.3, 6.4_
+- [ ] 1. Add configuration and message reference persistence
+  - [ ] 1.1 Add registration config entries to `bots/src/config/config.js`
+    - Add `registration` block with `pollIntervalMs`, `idlePollIntervalMs`, `messageDataPath`, `channelId`, `pollingStartOffsetHrs`, `pollingEndOffsetHrs`, `playWindowEndOffsetHrs`
+    - _Requirements: 6.1, 2.5_
+  - [ ] 1.2 Create message reference persistence utility
+    - Create `bots/src/utils/MessagePersistence.js` with `saveMessageReference(data)` and `loadMessageReference()` functions
+    - Save/load JSON to the configured `messageDataPath` (default `./data/registration-message.json`)
+    - Handle missing file gracefully (return null on first run)
+    - _Requirements: 1.1, 1.2_
+  - [ ]* 1.3 Write property test for message reference round trip
+    - **Property 1: Message reference persistence round trip**
+    - **Validates: Requirements 1.2**
 
-- [x] 5. Implement /register command with timezone-aware time slot selection
-  - Create register command handler that fetches current tournament data
-  - Build interactive time slot selection with Discord select menus
-  - Display time slots in both UTC and user's preferred timezone
-  - Handle registration confirmation and display success/error messages
-  - _Requirements: 1.1, 1.2, 1.4, 2.1, 2.2, 6.2_
+- [ ] 2. Implement tournament state derivation and embed building
+  - [ ] 2.1 Create `bots/src/services/RegistrationMessageManager.js` with `deriveTournamentState(tournamentData)` method
+    - Derive state as `registration_open`, `ongoing`, or `closed` based on tournament data, registration dates, and play window (first slot → last slot + 4hrs)
+    - Handle null/empty tournament data as `closed`
+    - _Requirements: 2.1, 2.2, 2.3_
+  - [ ]* 2.2 Write property test for tournament state derivation
+    - **Property 5: Tournament state derivation correctness**
+    - **Validates: Requirements 2.1, 2.2, 2.3**
+  - [ ] 2.3 Implement `buildRegistrationMessage(tournamentData)` method on `RegistrationMessageManager`
+    - Build embed and button components based on derived state
+    - `registration_open`: green embed with tournament name, week, session date, courses, time slots, enabled "Register Now" button
+    - `ongoing`: orange embed with "🏆 {Week} (In Progress)", UTC time slot, session date epoch timestamp, disabled button
+    - `closed`: grey embed with "No active tournament" message, disabled button
+    - _Requirements: 1.4, 1.5, 2.1, 2.2, 2.3_
+  - [ ]* 2.4 Write property test for registration-open embed completeness
+    - **Property 2: Registration-open embed completeness**
+    - **Validates: Requirements 1.4, 1.5, 2.1**
+  - [ ]* 2.5 Write property test for ongoing embed correctness
+    - **Property 3: Ongoing embed correctness**
+    - **Validates: Requirements 2.2, 5.3**
+  - [ ]* 2.6 Write property test for closed embed correctness
+    - **Property 4: Closed embed correctness**
+    - **Validates: Requirements 2.3**
 
-- [x] 6. Implement /unregister command functionality
-  - Create unregister command handler that displays user's current registrations
-  - Build interactive selection for choosing which registration to cancel
-  - Handle unregistration API calls and display confirmation messages
-  - _Requirements: 3.1, 3.3, 3.5_
+- [ ] 3. Implement polling and message lifecycle
+  - [ ] 3.1 Implement `calculatePollingWindow(tournamentData)` and `calculatePlayWindow(tournamentData)` methods
+    - Polling window: 2hrs before first slot → 8hrs after last slot (or next registration opens)
+    - Play window: first slot → last slot + 4hrs
+    - Account for `day_offset` in time slot calculations
+    - _Requirements: 2.4, 2.5_
+  - [ ] 3.2 Implement `startPolling()` / `stopPolling()` with dual-interval logic
+    - Active interval (default 60s) within polling window
+    - Idle interval (default 1hr) outside polling window
+    - On each poll: fetch tournament data, compare with last known state, update message if changed
+    - _Requirements: 6.1, 6.2_
+  - [ ] 3.3 Implement `ensureMessageExists()` and `initialize()` methods
+    - On init: load persisted reference, try to fetch the message from Discord
+    - If message exists: resume polling and updating
+    - If message missing: post a new one and persist the new reference
+    - _Requirements: 1.2, 1.3_
+  - [ ]* 3.4 Write property test for change detection
+    - **Property 8: Change detection triggers embed update**
+    - **Validates: Requirements 6.2**
 
-- [x] 7. Implement /mystatus command for registration viewing
-  - Create mystatus command handler that fetches and displays user registrations
-  - Format registration display with tournament details, time slots, and local times
-  - Handle cases where user has no active registrations
-  - _Requirements: 6.4, 6.5_
+- [ ] 4. Checkpoint
+  - Ensure all tests pass, ask the user if questions arise.
 
-- [x] 8. Implement /timezone command for user preference management
-  - Create timezone command handler for setting user timezone preferences
-  - Add timezone validation and suggestion system for invalid inputs
-  - Store timezone preferences and use them for future time displays
-  - _Requirements: 2.4, 7.1_
+- [ ] 5. Implement button interaction handler for new registrations
+  - [ ] 5.1 Create `bots/src/services/RegistrationButtonHandler.js` with `handleRegisterButton(interaction)` method
+    - Check tournament state: if `ongoing`, call `handleOngoingTournament()`
+    - Fetch player registrations via `RegistrationService.getPlayerRegistrations()`
+    - Route to `handleNewRegistration()` or `handleExistingRegistration()` based on result
+    - All responses are ephemeral
+    - _Requirements: 3.1, 4.1, 5.1_
+  - [ ] 5.2 Implement `handleNewRegistration(interaction, tournamentData)` flow
+    - Show time slots via select menu (UTC + player timezone if available, UTC-only if no timezone stored)
+    - On selection: show confirmation embed with time slot details
+    - On confirm: call `RegistrationService.registerPlayer()`, show success/error
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
+  - [ ]* 5.3 Write property test for ongoing state lockout
+    - **Property 6: Ongoing state blocks all modifications**
+    - **Validates: Requirements 5.1, 5.2**
 
-- [x] 9. Add comprehensive error handling and retry logic
-  - Implement error handling for API failures with exponential backoff retry
-  - Create user-friendly error messages for common failure scenarios
-  - Add logging system for debugging and monitoring bot operations
-  - Handle Discord API rate limiting and interaction timeouts
-  - _Requirements: 1.5, 3.4, 5.4, 6.3_
+- [ ] 6. Implement button interaction handler for existing registrations
+  - [ ] 6.1 Implement `handleExistingRegistration(interaction, registrationData, tournamentData)` flow
+    - Display current registration details with "Change Time Slot" and "Unregister" buttons
+    - _Requirements: 4.1, 4.2_
+  - [ ] 6.2 Implement `handleTimeSlotChange(interaction, currentRegistration, tournamentData)` flow
+    - Unregister from current slot, then present time slot selection, then register for new slot
+    - Show success/error after completion
+    - _Requirements: 4.3, 4.5_
+  - [ ] 6.3 Implement `handleUnregister(interaction, currentRegistration)` flow
+    - Show confirmation prompt, on confirm call `RegistrationService.unregisterPlayer()`, show result
+    - _Requirements: 4.4, 4.5_
+  - [ ]* 6.4 Write property test for existing registration management options
+    - **Property 7: Existing registration shows management options**
+    - **Validates: Requirements 4.2**
 
-- [x] 10. Create backend API endpoints for tournament registration
-  - Implement GET /current_tournament endpoint returning active tournaments with courses
-  - Create POST /register endpoint accepting Discord user data
-  - Implement POST /unregister endpoint for removing registrations
-  - Add GET /api/players/registrations/:discord_id endpoint for fetching user registrations
-  - _Requirements: 5.2, 5.3_
+- [ ] 7. Create setup command and wire into bot
+  - [ ] 7.1 Create `bots/src/commands/setupRegistration.js` slash command
+    - Command name: `setup-wmgt-registration`
+    - Requires Manage Messages permission
+    - Posts the registration message in the current channel via `RegistrationMessageManager`
+    - Persists the message reference
+    - Responds with ephemeral confirmation to the admin
+    - _Requirements: 1.1_
+  - [ ] 7.2 Wire `RegistrationMessageManager` and `RegistrationButtonHandler` into `bots/src/index.js`
+    - Import and instantiate `RegistrationMessageManager` in the bot constructor
+    - Call `manager.initialize()` in the `clientReady` event
+    - Add `interactionCreate` listener that routes button interactions with `reg_` prefix to `RegistrationButtonHandler`
+    - Register the `setup-wmgt-registration` command
+    - Call `manager.stopPolling()` in the bot's `stop()` method
+    - _Requirements: 1.2, 2.4, 2.5_
 
-- [x] 11. Integrate with existing t_discord_user functionality
-  - Modify registration endpoints to use existing t_discord_user package for user synchronization
-  - Ensure Discord user data (username, global_name, avatar) is properly synced on registration
-  - Test integration with existing player management system
-  - _Requirements: 5.2, 5.5_
+- [ ] 8. Add error handling for button interactions and polling
+  - [ ] 8.1 Add error handling to `RegistrationButtonHandler`
+    - API errors during registration: show error message with retry suggestion
+    - API errors during unregistration: show error message, note registration is unchanged
+    - API unreachable on button click: show "service temporarily unavailable" message
+    - Interaction timeout: clean up with timeout message via collector `end` event
+    - _Requirements: 7.1, 7.2, 7.3, 7.4_
+  - [ ] 8.2 Add error handling to `RegistrationMessageManager` polling
+    - API unreachable during poll: log error, retain last known state, retry next interval
+    - Message deleted externally: detect "Unknown Message" error on edit, post new message, update reference
+    - _Requirements: 1.3, 6.3_
 
-- [ ] 12. Add comprehensive testing suite
-  - Write unit tests for timezone service with various timezone scenarios
-  - Create integration tests for registration service API communication
-  - Implement Discord bot command testing using mock interactions
-  - Add end-to-end tests for complete registration flow
-  - _Requirements: 7.1, 7.3, 7.5_
+- [ ] 9. Final checkpoint
+  - Ensure all tests pass, ask the user if questions arise.
 
-- [x] 13. Implement production deployment configuration
-  - Create Docker configuration for bot deployment
-  - Set up environment variable management for production secrets
-  - Add health check endpoints and monitoring capabilities
-  - Create deployment scripts and documentation
-  - _Requirements: 5.1_
+## Notes
+
+- Tasks marked with `*` are optional and can be skipped for faster MVP
+- No backend (ORDS/PL/SQL) changes are needed — all existing endpoints are reused
+- The `fast-check` library is needed for property-based tests (`npm install --save-dev fast-check`)
+- Property tests validate universal correctness properties; unit tests validate specific examples and edge cases
