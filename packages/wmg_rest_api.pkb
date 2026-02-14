@@ -325,7 +325,8 @@ begin
               json_object(
                 'time_slot' value ts.time_slot,
                 'day_offset' value ts.day_offset,
-                'display' value ts.prepared_time_slot
+                'display' value ts.prepared_time_slot,
+                'session_date_epoch' value format_session_date_epoch(t.session_date, ts.time_slot)
               ) order by ts.seq
             )
             from wmg_time_slots_all_v ts
