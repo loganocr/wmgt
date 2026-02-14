@@ -316,6 +316,12 @@ begin
           'session_date' value to_char(t.session_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
           'open_registration_on' value to_char(t.open_registration_on, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
           'close_registration_on' value to_char(t.close_registration_on, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+          'tournament_state' value 
+              case 
+                 when t.rooms_open_flag = 'Y' and t.completed_ind = 'N' then 'ongoing'
+                 when t.completed_ind = 'Y' or t.registration_closed_flag is null then 'closed'
+                 when t.registration_closed_flag is null then 'open'
+              end,
           'registration_open' value case
             when t.registration_closed_flag is null 
             then 'true' else 'false'
@@ -354,8 +360,10 @@ begin
       , s.id tournament_session_id
       , s.week
       , s.session_date
+      , s.rooms_open_flag
       , s.open_registration_on
       , s.close_registration_on
+      , s.completed_ind
       , s.registration_closed_flag
    from wmg_tournament_sessions s
    join wmg_tournaments t on s.tournament_id = t.id
