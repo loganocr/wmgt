@@ -35,6 +35,10 @@ class RegistrationMessageManager {
       return 'closed';
     }
 
+    if (!tournamentData.sessions || Object.keys(tournamentData.sessions).length === 0) {
+      return 'closed';
+    }
+
     const apiState = tournamentData.sessions.tournament_state;
 
 
@@ -60,7 +64,7 @@ class RegistrationMessageManager {
    * @returns {{ start: moment.Moment, end: moment.Moment }|null}
    */
   calculatePollingWindow(tournamentData) {
-    if (!tournamentData || !tournamentData.sessions.session_date) {
+    if (!tournamentData || tournamentData == '{}' || !tournamentData.sessions) {
       return null;
     }
 
@@ -189,7 +193,7 @@ class RegistrationMessageManager {
   _buildOngoingMessage(tournamentData) {
     const embed = new EmbedBuilder()
       .setColor(0xFFA500)
-      .setTitle(`🏆 ${tournamentData.sessions.week} (In Progress) :gameon:`);
+      .setTitle(`🏆 ${tournamentData.sessions.week} (In Progress) ⛳️`);
 
     if (Array.isArray(tournamentData.sessions.courses) && tournamentData.sessions.courses.length > 0) {
       const courseList = tournamentData.sessions.courses.map(c => c.course_name).join('\n');
@@ -205,14 +209,19 @@ class RegistrationMessageManager {
 
     if (Array.isArray(tournamentData.sessions.available_time_slots) && tournamentData.sessions.available_time_slots.length > 0) {
       const slotList = tournamentData.sessions.available_time_slots
-        .map(s => '`' + s.time_slot + ' UTC`' + ' <t:' + s.session_date_epoch + ':t> ' + (s.time_slot_status === "done" ? '✅' : s.time_slot_status === 'current' ? '⬅️' : '' ) )
+        .map(s => 
+            '`' + 
+            s.time_slot + ' UTC` ' + 
+            `(\`${s.player_count.toString().padStart(2, ' ')}p\`) ` +
+           (s.time_slot_status === "done" ? '✅' : s.time_slot_status === 'current' ? '⬅️' : '⬜' ) + ' <t:' + s.session_date_epoch + ':t> '
+        )
         .join('\n');
-      embed.addFields({ name: 'Time Slots (UTC)', value: slotList, inline: false });
+      embed.addFields({ name: 'Time Slots (UTC & Local)', value: slotList, inline: false });
     }
 
     embed.addFields({ name: 'Legend:', value: '✅ - Done, ⬅️ - Now playing' , inline: false });
 
-    embed.addFields({ name: 'To enter scores go to ', value: config.bot.tournamentMDurl, inline: true });
+    embed.addFields({ name: 'To enter scores go to ', value: config.bot.tournamentMDurl, inline: true  });
 
     const button = new ButtonBuilder()
       .setCustomId('reg_register')

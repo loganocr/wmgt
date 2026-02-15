@@ -295,6 +295,7 @@ begin
   
   -- Handle NULL tournament_session_id case (tournament break)
   if l_tournament_session_id is null then
+    goto no_tournament_open;
     error_response(
         p_error_code => c_error_no_active_tournament_session
       , p_message => 'No available ' || p_tournament_type_code || ' tournaments at the time.'
@@ -319,7 +320,7 @@ begin
           'tournament_state' value 
               case 
                  when t.rooms_open_flag = 'Y' and t.completed_ind = 'N' then 'ongoing'
-                 when t.completed_ind = 'Y' or t.registration_closed_flag is null then 'closed'
+                 when t.completed_ind = 'Y' or t.registration_closed_flag is not null then 'closed'
                  when t.registration_closed_flag is null then 'open'
               end,
           'registration_open' value case
@@ -335,13 +336,19 @@ begin
                 'session_date_epoch' value format_session_date_epoch(t.session_date, ts.time_slot),
                 'time_slot_status' value 
                  case
-                   when systimestamp between to_utc_timestamp_tz(to_char(t.session_date + ts.day_offset,   'yyyy-mm-dd') || 'T' || ts.time_slot) and to_utc_timestamp_tz(to_char(t.session_date + nvl(ts.next_day_offset,-2), 'yyyy-mm-dd') || 'T' || nvl(ts.next_time_slot, '00:00')) - NUMTODSINTERVAL(1, 'SECOND')   then 'current' 
+                   when systimestamp between 
+                          to_utc_timestamp_tz(to_char(t.session_date + ts.day_offset,             'yyyy-mm-dd') || 'T' || ts.time_slot) 
+                      and to_utc_timestamp_tz(to_char(t.session_date + nvl(ts.next_day_offset,0), 'yyyy-mm-dd') || 'T' || nvl(ts.next_time_slot, '22:00')) - NUMTODSINTERVAL(1, 'SECOND')   then 'current' 
                    when to_utc_timestamp_tz(to_char(t.session_date + ts.day_offset,      'yyyy-mm-dd') || 'T' || ts.time_slot)  < systimestamp - NUMTODSINTERVAL(2, 'MINUTE') then 'done' 
                    else ''
-                 end 
+                 end,
+                'player_count' value (
+                    select count(*) from wmg_tournament_players p 
+                     where p.tournament_session_id = wts.id and p.time_slot = ts.time_slot)
               ) order by ts.seq
             )
             from wmg_time_slots_all_v ts
+            left join wmg_tournament_sessions wts on 1=1 and wts.id = t.tournament_session_id
           )
           ,'courses' value (
             select json_arrayagg(
@@ -349,7 +356,7 @@ begin
                 'course_no' value case when tc.course_no = 1 then 1 else 2 end,
                 'course_name' value c.name,
                 'course_code' value c.code,
-                'difficulty' value case when tc.course_no = 1 then 'Easy' else 'Hard' end
+                'difficulty' value case when c.course_mode = 'E' then 'Easy' else 'Hard' end
               )
             )
             from wmg_tournament_courses tc
@@ -376,8 +383,9 @@ begin
    where s.id = l_tournament_session_id
   ) t;
 
+  <<no_tournament_open>>
   if l_clob is null then
-    l_clob := '{}';
+    l_clob := '{"tournament": null}';
     /*
     json_object(
       'tournament' value null,
