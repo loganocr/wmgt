@@ -11,6 +11,11 @@ import timezoneCommand from './commands/timezone.js';
 import votesCommand from './commands/votes.js';
 import courseCommand from './commands/course.js';
 import courseraceCommand from './commands/courserace.js';
+import setupRegistrationCommand from './commands/setupRegistration.js';
+import RegistrationMessageManager from './services/RegistrationMessageManager.js';
+import RegistrationButtonHandler from './services/RegistrationButtonHandler.js';
+import { RegistrationService } from './services/RegistrationService.js';
+import { TimezoneService } from './services/TimezoneService.js';
 
 export class DiscordTournamentBot {
   constructor() {
@@ -41,6 +46,13 @@ export class DiscordTournamentBot {
     // Track interaction timeouts
     this.activeInteractions = new Map();
 
+    // Initialize registration services
+    const registrationService = new RegistrationService();
+    const timezoneService = new TimezoneService();
+    this.registrationMessageManager = new RegistrationMessageManager(this.client, registrationService);
+    this.registrationButtonHandler = new RegistrationButtonHandler(registrationService, timezoneService, this.registrationMessageManager);
+    this.client.registrationMessageManager = this.registrationMessageManager;
+
     // Load commands
     this.loadCommands();
 
@@ -56,7 +68,8 @@ export class DiscordTournamentBot {
       timezoneCommand,
       votesCommand,
       courseCommand,
-      courseraceCommand
+      courseraceCommand,
+      setupRegistrationCommand
     ];
 
     for (const command of commands) {
@@ -71,6 +84,14 @@ export class DiscordTournamentBot {
         guilds: this.client.guilds.cache.size,
         users: this.client.users.cache.size,
         uptime: process.uptime()
+      });
+
+      // Initialize registration message manager (non-blocking)
+      this.registrationMessageManager.initialize().catch((error) => {
+        this.logger.error('Failed to initialize RegistrationMessageManager', {
+          error: error.message,
+          stack: error.stack
+        });
       });
     });
 
@@ -192,6 +213,12 @@ export class DiscordTournamentBot {
       if (!interaction.isMessageComponent()) return;
 
       try {
+        // Route registration button interactions
+        if (interaction.isButton() && interaction.customId.startsWith('reg_')) {
+          await this.registrationButtonHandler.handleRegisterButton(interaction);
+          return;
+        }
+
         // Component interactions are handled by the commands themselves
         // This is just for logging and error handling
         this.logger.debug('Component interaction received', {
@@ -367,6 +394,9 @@ export class DiscordTournamentBot {
 
     // Clear rate limit handler
     this.rateLimitHandler.clearRateLimits();
+
+    // Stop registration message polling
+    this.registrationMessageManager.stopPolling();
 
     // Destroy Discord client
     this.client.destroy();

@@ -36,7 +36,7 @@ export const config = {
   },
   bot: {
     name: 'WMGT Tournament Bot',
-    version: '1.1.0',
+    version: '2.0.0',
     tournament: 'WMGT',
     tournamentMDurl: process.env.TOURNAMENT_MD_URL || '[MyWMGT.com](https://mywmgt.com)'
   },
@@ -67,6 +67,14 @@ export const config = {
     sentryDsn: process.env.SENTRY_DSN,
     datadogApiKey: process.env.DATADOG_API_KEY,
     newRelicLicenseKey: process.env.NEW_RELIC_LICENSE_KEY
+  },
+  registration: {
+    pollIntervalMs: parseInt(process.env.REGISTRATION_POLL_INTERVAL) || 60000,
+    idlePollIntervalMs: parseInt(process.env.REGISTRATION_IDLE_POLL_INTERVAL) || 3600000,
+    messageDataPath: process.env.REGISTRATION_MESSAGE_DATA_PATH || './data/registration-message.json',
+    channelId: process.env.REGISTRATION_CHANNEL_ID || null,
+    pollingStartOffsetHrs: parseInt(process.env.REGISTRATION_POLL_START_OFFSET_HRS) || 2,
+    pollingEndOffsetHrs: parseInt(process.env.REGISTRATION_POLL_END_OFFSET_HRS) || 8
   },
   database: {
     host: process.env.DB_HOST,
