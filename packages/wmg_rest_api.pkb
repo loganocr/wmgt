@@ -332,7 +332,13 @@ begin
                 'time_slot' value ts.time_slot,
                 'day_offset' value ts.day_offset,
                 'display' value ts.prepared_time_slot,
-                'session_date_epoch' value format_session_date_epoch(t.session_date, ts.time_slot)
+                'session_date_epoch' value format_session_date_epoch(t.session_date, ts.time_slot),
+                'time_slot_status' value 
+                 case
+                   when systimestamp between to_utc_timestamp_tz(to_char(t.session_date + ts.day_offset,   'yyyy-mm-dd') || 'T' || ts.time_slot) and to_utc_timestamp_tz(to_char(t.session_date + nvl(ts.next_day_offset,-2), 'yyyy-mm-dd') || 'T' || nvl(ts.next_time_slot, '00:00')) - NUMTODSINTERVAL(1, 'SECOND')   then 'current' 
+                   when to_utc_timestamp_tz(to_char(t.session_date + ts.day_offset,      'yyyy-mm-dd') || 'T' || ts.time_slot)  < systimestamp - NUMTODSINTERVAL(2, 'MINUTE') then 'done' 
+                   else ''
+                 end 
               ) order by ts.seq
             )
             from wmg_time_slots_all_v ts
