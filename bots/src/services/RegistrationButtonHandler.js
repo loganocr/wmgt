@@ -1,0 +1,839 @@
+import {
+  StringSelectMenuBuilder,
+  ActionRowBuilder,
+  EmbedBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ComponentType
+} from 'discord.js';
+import { config } from '../config/config.js';
+import { logger } from '../utils/Logger.js';
+
+/**
+ * Handles all button and component interactions originating from the registration message.
+ * Routes button clicks based on tournament state and player registration status.
+ */
+class RegistrationButtonHandler {
+  constructor(registrationService, timezoneService, registrationMessageManager) {
+    this.registrationService = registrationService;
+    this.timezoneService = timezoneService;
+    this.registrationMessageManager = registrationMessageManager;
+    this.logger = logger.child({ service: 'RegistrationButtonHandler' });
+  }
+
+  /**
+   * Main entry point: route button click based on tournament state and player registration.
+   *
+   * Flow:
+   *  1. Defer reply as ephemeral
+   *  2. Fetch current tournament data
+   *  3. Derive tournament state
+   *  4. If ongoing → handleOngoingTournament
+   *  5. If closed → reply with "no active tournament"
+   *  6. Fetch player registrations
+   *  7. If registered → handleExistingRegistration
+   *  8. Else → handleNewRegistration
+   *
+   * @param {import('discord.js').ButtonInteraction} interaction
+   */
+  async handleRegisterButton(interaction) {
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch (deferError) {
+      // Interaction already expired or was acknowledged — nothing we can do
+      this.logger.error('Failed to defer reply — interaction may have expired', { error: deferError.message });
+      return;
+    }
+
+    try {
+      const tournamentData = await this.registrationService.getCurrentTournament();
+      const state = this.registrationMessageManager.deriveTournamentState(tournamentData);
+
+      if (state === 'ongoing') {
+        return this.handleOngoingTournament(interaction, tournamentData);
+      }
+
+      if (state === 'closed') {
+        return interaction.editReply({
+          content: '❌ There is no active tournament session right now. Check back soon!'
+        });
+      }
+
+      // State is registration_open — check if player is already registered
+      const registrationData = await this.registrationService.getPlayerRegistrations(interaction.user.id);
+
+      const hasActiveRegistration =
+        registrationData &&
+        Array.isArray(registrationData.registrations) &&
+        registrationData.registrations.length > 0;
+
+      if (hasActiveRegistration) {
+        return this.handleExistingRegistration(interaction, registrationData, tournamentData);
+      }
+
+      return this.handleNewRegistration(interaction, tournamentData);
+    } catch (error) {
+      this.logger.error('Error handling register button', { error: error.message });
+      try {
+        return await interaction.editReply({
+          content: '⚠️ The tournament service is temporarily unavailable. Please try again in a few minutes.'
+        });
+      } catch (editError) {
+        // editReply failed too — interaction is gone, nothing more we can do
+        this.logger.error('Failed to send error message to user', { error: editError.message });
+      }
+    }
+  }
+
+  /**
+   * Handle click when tournament is ongoing.
+   * Responds with an ephemeral message explaining registration is locked.
+   *
+   * @param {import('discord.js').ButtonInteraction} interaction
+   * @param {object} tournamentData
+   */
+  async handleOngoingTournament(interaction, tournamentData) {
+    const timeSlots = tournamentData.sessions.available_time_slots || [];
+    const slotList = slotList
+        .map(s => '`' + s.time_slot + ' UTC`' + ' <t:' + s.session_date_epoch + ':t>')
+        .join('\n');
+
+    const message = [
+      '🔒 **Registration is locked** — the tournament is currently in progress.',
+      '',
+      slotList ? `**Time Slots:** ${slotList}` : '',
+      '',
+      'Registration changes are not allowed while the tournament is being played. Please check back after the session ends.',
+      '',
+      'To enter scores go to ',
+      config.bot.tournamentMDurl
+    ].filter(Boolean).join('\n');
+
+    return interaction.editReply({ content: message });
+  }
+
+  /**
+   * Flow for unregistered players: show time slots → confirm → register.
+   *
+   * 1. Get player timezone
+   * 2. Format time slots (UTC + local if timezone available)
+   * 3. Show select menu for time slot selection
+   * 4. On select: show confirmation embed with details
+   * 5. On confirm: register player, show success/error
+   * 6. On cancel: show cancellation message
+   * 7. On timeout: show timeout message
+   *
+   * @param {import('discord.js').ButtonInteraction} interaction
+   * @param {object} tournamentData
+   */
+  async handleNewRegistration(interaction, tournamentData) {
+    // 1. Get player's timezone
+    const timezone = await this.timezoneService.getUserTimezone(
+      this.registrationService,
+      interaction.user.id
+    );
+
+    // 2. Format time slots with timezone info
+    const formattedSlots = this.timezoneService.formatTournamentTimeSlots(
+      tournamentData.available_time_slots,
+      tournamentData.session_date,
+      timezone
+    );
+
+    // 3. Build select menu options
+    const isUTC = timezone === 'UTC';
+    const options = formattedSlots.map((slot, index) => {
+      const label = isUTC
+        ? `${slot.utcTime} UTC`
+        : `${slot.localTime} ${slot.localTimezone} (${slot.utcTime} UTC)`;
+      const description = slot.dateChanged
+        ? `${slot.localDate}`
+        : `${slot.utcDate}`;
+
+      return {
+        label,
+        description,
+        value: slot.value.time_slot
+      };
+    });
+
+    const selectMenu = new StringSelectMenuBuilder()
+      .setCustomId('reg_timeslot_select')
+      .setPlaceholder('Choose a time slot')
+      .addOptions(options);
+
+    const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+
+    // Build the prompt content
+    const week = tournamentData.week || 'Current Week';
+    let content = `⏰ **Select a time slot for ${week}:**`;
+    if (isUTC) {
+      content += '\n\n💡 *Tip: Use the `/timezone` command to set your timezone and see local times.*';
+    }
+
+    // 4. Edit the deferred reply with the select menu
+    const replyMessage = await interaction.editReply({
+      content,
+      components: [selectRow]
+    });
+
+    // 5. Create collector on the reply message
+    const collector = replyMessage.createMessageComponentCollector({
+      filter: (i) => i.user.id === interaction.user.id,
+      time: 300000 // 5 minutes
+    });
+
+    collector.on('collect', async (componentInteraction) => {
+      try {
+        if (componentInteraction.customId === 'reg_timeslot_select') {
+          // Time slot selected — show confirmation
+          collector.stop('selection_made');
+          await this._handleTimeSlotConfirmation(
+            componentInteraction, tournamentData, formattedSlots, timezone
+          );
+        }
+      } catch (error) {
+        this.logger.error('Error handling time slot selection', { error: error.message });
+        try {
+          await interaction.editReply({
+            content: '❌ An error occurred while processing your selection. Please try again.',
+            components: [],
+            embeds: []
+          });
+        } catch (editError) {
+          // Interaction may have expired
+        }
+      }
+    });
+
+    collector.on('end', (collected, reason) => {
+      if (reason === 'time') {
+        interaction.editReply({
+          content: '⏰ Time slot selection timed out. Click **Register Now** again to start over.',
+          components: [],
+          embeds: []
+        }).catch(() => {}); // Ignore if interaction expired
+      }
+    });
+  }
+
+  /**
+   * Show confirmation embed after time slot selection, then handle confirm/cancel.
+   *
+   * @param {import('discord.js').StringSelectMenuInteraction} selectInteraction
+   * @param {object} tournamentData
+   * @param {Array} formattedSlots
+   * @param {string} timezone
+   * @private
+   */
+  async _handleTimeSlotConfirmation(selectInteraction, tournamentData, formattedSlots, timezone) {
+    await selectInteraction.deferUpdate();
+
+    const selectedTimeSlot = selectInteraction.values[0];
+    const selectedSlot = formattedSlots.find(s => s.value.time_slot === selectedTimeSlot);
+
+    const week = tournamentData.week || 'Current Week';
+    const isUTC = timezone === 'UTC';
+
+    // Build time display
+    const timeDisplay = isUTC
+      ? `${selectedSlot.utcTime} UTC`
+      : `${selectedSlot.localTime} ${selectedSlot.localTimezone} (${selectedSlot.utcTime} UTC)`;
+
+    const dateDisplay = selectedSlot.dateChanged
+      ? `UTC: ${selectedSlot.utcDate} / Local: ${selectedSlot.localDate}`
+      : selectedSlot.utcDate;
+
+    // Build confirmation embed
+    const confirmEmbed = new EmbedBuilder()
+      .setColor(0xFFA500)
+      .setTitle('⚠️ Confirm Registration')
+      .setDescription(`Please confirm your registration for **${week}**`)
+      .addFields(
+        { name: '⏰ Time Slot', value: timeDisplay, inline: true },
+        { name: '📅 Date', value: dateDisplay, inline: true }
+      );
+
+    if (tournamentData.tournament_name) {
+      confirmEmbed.spliceFields(0, 0, {
+        name: '🏆 Tournament',
+        value: tournamentData.tournament_name,
+        inline: true
+      });
+    }
+
+    // Build confirm/cancel buttons
+    const confirmButton = new ButtonBuilder()
+      .setCustomId(`reg_confirm_${tournamentData.session_id}_${selectedTimeSlot}`)
+      .setLabel('Confirm Registration')
+      .setStyle(ButtonStyle.Success)
+      .setEmoji('✅');
+
+    const cancelButton = new ButtonBuilder()
+      .setCustomId('reg_cancel')
+      .setLabel('Cancel')
+      .setStyle(ButtonStyle.Danger)
+      .setEmoji('❌');
+
+    const buttonRow = new ActionRowBuilder().addComponents(confirmButton, cancelButton);
+
+    const confirmMessage = await selectInteraction.editReply({
+      content: null,
+      embeds: [confirmEmbed],
+      components: [buttonRow]
+    });
+
+    // Collect confirm/cancel button clicks
+    const buttonCollector = confirmMessage.createMessageComponentCollector({
+      filter: (i) => i.user.id === selectInteraction.user.id,
+      componentType: ComponentType.Button,
+      time: 300000 // 5 minutes
+    });
+
+    buttonCollector.on('collect', async (buttonInteraction) => {
+      try {
+        if (buttonInteraction.customId.startsWith('reg_confirm_')) {
+          buttonCollector.stop('confirmed');
+          await this._processRegistration(
+            buttonInteraction, tournamentData, selectedTimeSlot, selectedSlot, timezone
+          );
+        } else if (buttonInteraction.customId === 'reg_cancel') {
+          buttonCollector.stop('cancelled');
+          await buttonInteraction.update({
+            content: '❌ Registration cancelled.',
+            embeds: [],
+            components: []
+          });
+        }
+      } catch (error) {
+        this.logger.error('Error handling confirmation button', { error: error.message });
+        try {
+          await selectInteraction.editReply({
+            content: '❌ An error occurred. Please try again.',
+            embeds: [],
+            components: []
+          });
+        } catch (editError) {
+          // Interaction may have expired
+        }
+      }
+    });
+
+    buttonCollector.on('end', (collected, reason) => {
+      if (reason === 'time') {
+        selectInteraction.editReply({
+          content: '⏰ Confirmation timed out. Click **Register Now** again to start over.',
+          embeds: [],
+          components: []
+        }).catch(() => {});
+      }
+    });
+  }
+
+  /**
+   * Call the registration API and show success or error.
+   *
+   * @param {import('discord.js').ButtonInteraction} buttonInteraction
+   * @param {object} tournamentData
+   * @param {string} selectedTimeSlot
+   * @param {object} selectedSlot - formatted slot object
+   * @param {string} timezone
+   * @private
+   */
+  async _processRegistration(buttonInteraction, tournamentData, selectedTimeSlot, selectedSlot, timezone) {
+    await buttonInteraction.deferUpdate();
+
+    try {
+      const result = await this.registrationService.registerPlayer(
+        buttonInteraction.user,
+        tournamentData.session_id,
+        selectedTimeSlot,
+        timezone
+      );
+
+      const week = tournamentData.week || 'Current Week';
+      const isUTC = timezone === 'UTC';
+      const timeDisplay = isUTC
+        ? `${selectedSlot.utcTime} UTC`
+        : `${selectedSlot.localTime} ${selectedSlot.localTimezone} (${selectedSlot.utcTime} UTC)`;
+
+      const successEmbed = new EmbedBuilder()
+        .setColor(0x00FF00)
+        .setTitle('✅ Registration Successful!')
+        .setDescription(`You have been registered for **${week}**`)
+        .addFields(
+          { name: '⏰ Time Slot', value: timeDisplay, inline: true }
+        );
+
+      if (result.registration?.room_no) {
+        successEmbed.addFields({
+          name: '🏠 Room',
+          value: `Room ${result.registration.room_no}`,
+          inline: true
+        });
+      }
+
+      successEmbed.setFooter({
+        text: 'Use /mystatus to view your registrations or /unregister to cancel.'
+      });
+
+      await buttonInteraction.editReply({
+        content: null,
+        embeds: [successEmbed],
+        components: []
+      });
+    } catch (error) {
+      this.logger.error('Registration failed', { error: error.message });
+
+      const errorEmbed = new EmbedBuilder()
+        .setColor(0xFF0000)
+        .setTitle('❌ Registration Failed')
+        .setDescription(error.message || 'An unexpected error occurred.')
+        .setFooter({ text: 'Please try again or contact an admin if the problem persists.' });
+
+      await buttonInteraction.editReply({
+        content: null,
+        embeds: [errorEmbed],
+        components: []
+      });
+    }
+  }
+
+  /**
+   * Flow for registered players: show current reg + Change/Unregister options.
+   * Stub — will be implemented in Task 6.1.
+   *
+   * @param {import('discord.js').ButtonInteraction} interaction
+   * @param {object} registrationData
+   * @param {object} tournamentData
+   */
+  /**
+     * Flow for registered players: show current registration details with
+     * "Change Time Slot" and "Unregister" buttons.
+     *
+     * @param {import('discord.js').ButtonInteraction} interaction
+     * @param {object} registrationData
+     * @param {object} tournamentData
+     */
+    async handleExistingRegistration(interaction, registrationData, tournamentData) {
+      const currentRegistration = registrationData.registrations[0];
+
+      // Get player's timezone for local time display
+      const timezone = await this.timezoneService.getUserTimezone(
+        this.registrationService,
+        interaction.user.id
+      );
+
+      const isUTC = timezone === 'UTC';
+
+      // Format time slot display
+      const timeSlotUTC = `${currentRegistration.time_slot} UTC`;
+      let timeSlotDisplay = timeSlotUTC;
+      if (!isUTC) {
+        const formattedSlots = this.timezoneService.formatTournamentTimeSlots(
+          [{ time: currentRegistration.time_slot, day_offset: 0 }],
+          currentRegistration.session_date,
+          timezone
+        );
+        if (formattedSlots.length > 0) {
+          const slot = formattedSlots[0];
+          timeSlotDisplay = `${slot.localTime} ${slot.localTimezone} (${timeSlotUTC})`;
+        }
+      }
+
+      // Build embed showing current registration details
+      const embed = new EmbedBuilder()
+        .setColor(0x0099FF)
+        .setTitle('📋 Your Current Registration')
+        .addFields(
+          { name: '🏆 Tournament', value: currentRegistration.tournament_name || tournamentData.tournament_name || 'Unknown', inline: true },
+          { name: '📅 Week', value: currentRegistration.week || tournamentData.week || 'Unknown', inline: true },
+          { name: '⏰ Time Slot', value: timeSlotDisplay, inline: false },
+          { name: '📆 Session Date', value: currentRegistration.session_date || 'Unknown', inline: true }
+        );
+
+      // Build "Change Time Slot" and "Unregister" buttons
+      const changeSlotButton = new ButtonBuilder()
+        .setCustomId('reg_change_slot')
+        .setLabel('Change Time Slot')
+        .setStyle(ButtonStyle.Primary)
+        .setEmoji('🔄');
+
+      const unregisterButton = new ButtonBuilder()
+        .setCustomId('reg_unregister')
+        .setLabel('Unregister')
+        .setStyle(ButtonStyle.Danger)
+        .setEmoji('🗑️');
+
+      const buttonRow = new ActionRowBuilder().addComponents(changeSlotButton, unregisterButton);
+
+      // Edit the deferred reply with embed and buttons
+      const replyMessage = await interaction.editReply({
+        content: null,
+        embeds: [embed],
+        components: [buttonRow]
+      });
+
+      // Create a component collector with 5-minute timeout
+      const collector = replyMessage.createMessageComponentCollector({
+        filter: (i) => i.user.id === interaction.user.id,
+        componentType: ComponentType.Button,
+        time: 300000 // 5 minutes
+      });
+
+      collector.on('collect', async (buttonInteraction) => {
+        try {
+          if (buttonInteraction.customId === 'reg_change_slot') {
+            collector.stop('change_slot');
+            await this.handleTimeSlotChange(interaction, currentRegistration, tournamentData);
+          } else if (buttonInteraction.customId === 'reg_unregister') {
+            collector.stop('unregister');
+            await this.handleUnregister(interaction, currentRegistration);
+          }
+        } catch (error) {
+          this.logger.error('Error handling existing registration button', { error: error.message });
+          try {
+            await interaction.editReply({
+              content: '❌ An error occurred while processing your request. Please try again.',
+              embeds: [],
+              components: []
+            });
+          } catch (editError) {
+            // Interaction may have expired
+          }
+        }
+      });
+
+      collector.on('end', (collected, reason) => {
+        if (reason === 'time') {
+          interaction.editReply({
+            content: '⏰ Interaction timed out. Click **Register Now** again to manage your registration.',
+            embeds: [],
+            components: []
+          }).catch(() => {}); // Ignore if interaction expired
+        }
+      });
+    }
+
+
+  /**
+   * Handle time slot change: unregister → show slots → register new.
+   * Stub — will be implemented in Task 6.2.
+   *
+   * @param {import('discord.js').ButtonInteraction} interaction
+   * @param {object} currentRegistration
+   * @param {object} tournamentData
+   */
+  /**
+     * Handle time slot change: unregister → show slots → register new.
+     *
+     * Flow:
+     *  1. Unregister from current slot
+     *  2. Get player timezone
+     *  3. Format available time slots
+     *  4. Show select menu with available slots
+     *  5. On selection: register for new slot, show success/error
+     *  6. On timeout: show timeout message
+     *
+     * @param {import('discord.js').ButtonInteraction} interaction - The ORIGINAL button interaction (already deferred)
+     * @param {object} currentRegistration
+     * @param {object} tournamentData
+     */
+    async handleTimeSlotChange(interaction, currentRegistration, tournamentData) {
+      // 1. Unregister from current slot
+      try {
+        await this.registrationService.unregisterPlayer(
+          interaction.user.id,
+          currentRegistration.session_id
+        );
+      } catch (error) {
+        this.logger.error('Failed to unregister during time slot change', { error: error.message });
+
+        const errorEmbed = new EmbedBuilder()
+          .setColor(0xFF0000)
+          .setTitle('❌ Time Slot Change Failed')
+          .setDescription(`Could not unregister from your current slot: ${error.message}`)
+          .setFooter({ text: 'Your current registration is unchanged. Please try again.' });
+
+        return interaction.editReply({
+          content: null,
+          embeds: [errorEmbed],
+          components: []
+        });
+      }
+
+      // 2. Get player timezone
+      const timezone = await this.timezoneService.getUserTimezone(
+        this.registrationService,
+        interaction.user.id
+      );
+
+      // 3. Format available time slots
+      const formattedSlots = this.timezoneService.formatTournamentTimeSlots(
+        tournamentData.available_time_slots,
+        tournamentData.session_date,
+        timezone
+      );
+
+      // 4. Build select menu
+      const isUTC = timezone === 'UTC';
+      const options = formattedSlots.map((slot) => {
+        const label = isUTC
+          ? `${slot.utcTime} UTC`
+          : `${slot.localTime} ${slot.localTimezone} (${slot.utcTime} UTC)`;
+        const description = slot.dateChanged
+          ? `${slot.localDate}`
+          : `${slot.utcDate}`;
+
+        return {
+          label,
+          description,
+          value: slot.value.time_slot
+        };
+      });
+
+      const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId('reg_change_timeslot_select')
+        .setPlaceholder('Choose a new time slot')
+        .addOptions(options);
+
+      const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+
+      const week = tournamentData.week || 'Current Week';
+      let content = `🔄 **Select a new time slot for ${week}:**\n\nYou have been unregistered from your previous slot (${currentRegistration.time_slot} UTC).`;
+      if (isUTC) {
+        content += '\n\n💡 *Tip: Use the `/timezone` command to set your timezone and see local times.*';
+      }
+
+      const replyMessage = await interaction.editReply({
+        content,
+        embeds: [],
+        components: [selectRow]
+      });
+
+      // 5. Create collector for time slot selection
+      const collector = replyMessage.createMessageComponentCollector({
+        filter: (i) => i.user.id === interaction.user.id,
+        time: 300000 // 5 minutes
+      });
+
+      collector.on('collect', async (selectInteraction) => {
+        try {
+          if (selectInteraction.customId === 'reg_change_timeslot_select') {
+            collector.stop('selection_made');
+            await selectInteraction.deferUpdate();
+
+            const selectedTimeSlot = selectInteraction.values[0];
+            const selectedSlot = formattedSlots.find(s => s.value.time_slot === selectedTimeSlot);
+
+            try {
+              const result = await this.registrationService.registerPlayer(
+                interaction.user,
+                tournamentData.session_id,
+                selectedTimeSlot,
+                timezone
+              );
+
+              const timeDisplay = isUTC
+                ? `${selectedSlot.utcTime} UTC`
+                : `${selectedSlot.localTime} ${selectedSlot.localTimezone} (${selectedSlot.utcTime} UTC)`;
+
+              const successEmbed = new EmbedBuilder()
+                .setColor(0x00FF00)
+                .setTitle('✅ Time Slot Changed Successfully!')
+                .setDescription(`You have been re-registered for **${week}**`)
+                .addFields(
+                  { name: '⏰ New Time Slot', value: timeDisplay, inline: true }
+                );
+
+              if (result.registration?.room_no) {
+                successEmbed.addFields({
+                  name: '🏠 Room',
+                  value: `Room ${result.registration.room_no}`,
+                  inline: true
+                });
+              }
+
+              successEmbed.setFooter({
+                text: 'Use /mystatus to view your registrations.'
+              });
+
+              await interaction.editReply({
+                content: null,
+                embeds: [successEmbed],
+                components: []
+              });
+            } catch (regError) {
+              this.logger.error('Re-registration failed during time slot change', { error: regError.message });
+
+              const errorEmbed = new EmbedBuilder()
+                .setColor(0xFF0000)
+                .setTitle('❌ Re-registration Failed')
+                .setDescription(regError.message || 'An unexpected error occurred.')
+                .setFooter({ text: 'You have been unregistered from your previous slot. Please try registering again.' });
+
+              await interaction.editReply({
+                content: null,
+                embeds: [errorEmbed],
+                components: []
+              });
+            }
+          }
+        } catch (error) {
+          this.logger.error('Error handling time slot change selection', { error: error.message });
+          try {
+            await interaction.editReply({
+              content: '❌ An error occurred while processing your selection. Please try again.',
+              components: [],
+              embeds: []
+            });
+          } catch (editError) {
+            // Interaction may have expired
+          }
+        }
+      });
+
+      collector.on('end', (collected, reason) => {
+        if (reason === 'time') {
+          interaction.editReply({
+            content: '⏰ Time slot selection timed out. Click **Register Now** again to start over.',
+            components: [],
+            embeds: []
+          }).catch(() => {}); // Ignore if interaction expired
+        }
+      });
+    }
+
+
+  /**
+   * Handle unregistration: show confirmation → on confirm call unregisterPlayer → show result.
+   *
+   * The `interaction` parameter is the ORIGINAL button interaction from handleExistingRegistration
+   * (already deferred as ephemeral). All updates go through interaction.editReply().
+   *
+   * @param {import('discord.js').ButtonInteraction} interaction
+   * @param {object} currentRegistration - { session_id, time_slot, session_date, tournament_name, week }
+   */
+  async handleUnregister(interaction, currentRegistration) {
+    const week = currentRegistration.week || 'Current Week';
+    const timeSlot = currentRegistration.time_slot || 'Unknown';
+
+    // Build confirmation embed
+    const confirmEmbed = new EmbedBuilder()
+      .setColor(0xFFA500)
+      .setTitle('⚠️ Confirm Unregistration')
+      .setDescription(`Are you sure you want to unregister from **${week}**?`)
+      .addFields(
+        { name: '⏰ Time Slot', value: `${timeSlot} UTC`, inline: true },
+        { name: '📅 Session Date', value: currentRegistration.session_date || 'Unknown', inline: true }
+      );
+
+    if (currentRegistration.tournament_name) {
+      confirmEmbed.spliceFields(0, 0, {
+        name: '🏆 Tournament',
+        value: currentRegistration.tournament_name,
+        inline: true
+      });
+    }
+
+    // Build confirm/cancel buttons
+    const confirmButton = new ButtonBuilder()
+      .setCustomId(`reg_confirm_unreg_${currentRegistration.session_id}`)
+      .setLabel('Confirm Unregistration')
+      .setStyle(ButtonStyle.Danger)
+      .setEmoji('🗑️');
+
+    const cancelButton = new ButtonBuilder()
+      .setCustomId('reg_cancel')
+      .setLabel('Cancel')
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji('❌');
+
+    const buttonRow = new ActionRowBuilder().addComponents(confirmButton, cancelButton);
+
+    const confirmMessage = await interaction.editReply({
+      content: null,
+      embeds: [confirmEmbed],
+      components: [buttonRow]
+    });
+
+    // Collect confirm/cancel button clicks
+    const buttonCollector = confirmMessage.createMessageComponentCollector({
+      filter: (i) => i.user.id === interaction.user.id,
+      componentType: ComponentType.Button,
+      time: 300000 // 5 minutes
+    });
+
+    buttonCollector.on('collect', async (buttonInteraction) => {
+      try {
+        if (buttonInteraction.customId.startsWith('reg_confirm_unreg_')) {
+          buttonCollector.stop('confirmed');
+          await buttonInteraction.deferUpdate();
+
+          try {
+            await this.registrationService.unregisterPlayer(
+              interaction.user.id,
+              currentRegistration.session_id
+            );
+
+            const successEmbed = new EmbedBuilder()
+              .setColor(0x00FF00)
+              .setTitle('✅ Unregistration Successful')
+              .setDescription(`You have been unregistered from **${week}**.`)
+              .setFooter({ text: 'Click Register Now to sign up for a different time slot.' });
+
+            await interaction.editReply({
+              content: null,
+              embeds: [successEmbed],
+              components: []
+            });
+          } catch (error) {
+            this.logger.error('Unregistration failed', { error: error.message });
+
+            const errorEmbed = new EmbedBuilder()
+              .setColor(0xFF0000)
+              .setTitle('❌ Unregistration Failed')
+              .setDescription(error.message || 'An unexpected error occurred.')
+              .setFooter({ text: 'Your current registration is unchanged. Please try again.' });
+
+            await interaction.editReply({
+              content: null,
+              embeds: [errorEmbed],
+              components: []
+            });
+          }
+        } else if (buttonInteraction.customId === 'reg_cancel') {
+          buttonCollector.stop('cancelled');
+          await buttonInteraction.update({
+            content: '❌ Unregistration cancelled. Your registration is unchanged.',
+            embeds: [],
+            components: []
+          });
+        }
+      } catch (error) {
+        this.logger.error('Error handling unregister confirmation', { error: error.message });
+        try {
+          await interaction.editReply({
+            content: '❌ An error occurred. Please try again.',
+            embeds: [],
+            components: []
+          });
+        } catch (editError) {
+          // Interaction may have expired
+        }
+      }
+    });
+
+    buttonCollector.on('end', (collected, reason) => {
+      if (reason === 'time') {
+        interaction.editReply({
+          content: '⏰ Confirmation timed out. Click **Register Now** again to manage your registration.',
+          embeds: [],
+          components: []
+        }).catch(() => {}); // Ignore if interaction expired
+      }
+    });
+  }
+}
+
+export default RegistrationButtonHandler;
