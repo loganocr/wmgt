@@ -205,10 +205,12 @@ class RegistrationMessageManager {
 
     if (Array.isArray(tournamentData.sessions.available_time_slots) && tournamentData.sessions.available_time_slots.length > 0) {
       const slotList = tournamentData.sessions.available_time_slots
-        .map(s => '`' + s.time_slot + ' UTC`' + ' <t:' + s.session_date_epoch + ':t>')
+        .map(s => '`' + s.time_slot + ' UTC`' + ' <t:' + s.session_date_epoch + ':t> ' + (s.time_slot_status === "done" ? '✅' : s.time_slot_status === 'current' ? '⬅️' : '' ) )
         .join('\n');
       embed.addFields({ name: 'Time Slots (UTC)', value: slotList, inline: false });
     }
+
+    embed.addFields({ name: 'Legend:', value: '✅ - Done, ⬅️ - Now playing' , inline: false });
 
     embed.addFields({ name: 'To enter scores go to ', value: config.bot.tournamentMDurl, inline: true });
 
