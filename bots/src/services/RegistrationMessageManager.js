@@ -60,16 +60,16 @@ class RegistrationMessageManager {
    * @returns {{ start: moment.Moment, end: moment.Moment }|null}
    */
   calculatePollingWindow(tournamentData) {
-    if (!tournamentData || !tournamentData.session_date) {
+    if (!tournamentData || !tournamentData.sessions.session_date) {
       return null;
     }
 
-    const slots = tournamentData.available_time_slots;
+    const slots = tournamentData.sessions.available_time_slots;
     if (!Array.isArray(slots) || slots.length === 0) {
       return null;
     }
 
-    const sessionDate = moment.utc(tournamentData.session_date).startOf('day');
+    const sessionDate = moment.utc(tournamentData.sessions.session_date).startOf('day');
     const startOffsetHrs = config.registration.pollingStartOffsetHrs;
     const endOffsetHrs = config.registration.pollingEndOffsetHrs;
 
@@ -77,9 +77,9 @@ class RegistrationMessageManager {
     let latest = null;
 
     for (const slot of slots) {
-      if (!slot.time) continue;
+      if (!slot.time_slot) continue;
 
-      const [hours, minutes] = slot.time.split(':').map(Number);
+      const [hours, minutes] = slot.time_slot.split(':').map(Number);
       const dayOffset = slot.day_offset || 0;
 
       const slotMoment = sessionDate.clone()
