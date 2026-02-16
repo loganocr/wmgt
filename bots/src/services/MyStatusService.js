@@ -1,3 +1,4 @@
+import { config } from '../config/config.js';
 import { EmbedBuilder } from 'discord.js';
 
 /**
@@ -41,7 +42,7 @@ export class MyStatusService {
 
     const embed = new EmbedBuilder()
       .setColor(0x0099FF)
-      .setTitle('🏆 Your Tournament Registrations')
+      .setTitle('🏆 WMGT Registration Status')
       .setAuthor({
         name: user.displayName || user.username,
         iconURL: user.displayAvatarURL()
@@ -49,10 +50,10 @@ export class MyStatusService {
       .setTimestamp();
 
     if (registrationData.error_code === 'PLAYER_NOT_FOUND') {
-      embed.setDescription('📭 You are not currently registered for any tournaments.')
+      embed.setDescription('❌ You are **not currently registered** for any tournaments.')
         .addFields({
           name: '💡 Want to register?',
-          value: 'As a new player you visit [MyWMGT.com](https://mywmgt.com) to setup your account.',
+          value: `As a new player you visit ${config.bot.tournamentMDurl} to setup your account.`,
           inline: false
         });
 
@@ -60,7 +61,7 @@ export class MyStatusService {
     }
 
     if (!registrationData.registrations || registrationData.registrations.length === 0) {
-      embed.setDescription('📭 You are not currently registered for any tournaments.')
+      embed.setDescription('❌ You are **not currently registered** for the tournament.')
         .addFields({
           name: '💡 Want to register?',
           value: 'Use `/register` to sign up for the current tournament!',
@@ -71,8 +72,9 @@ export class MyStatusService {
     }
 
     const registrations = registrationData.registrations;
-    const playerName = registrationData.player?.name || user.displayName || user.username;
-    embed.setDescription(`**Player:** ${playerName}\n**Active Registrations:** ${registrations.length}`);
+    // const playerName = registrationData.player?.name || user.displayName || user.username;
+    // embed.setDescription(`**Player:** ${playerName}\n**Active Registrations:** ${registrations.length}`);
+    // embed.setDescription(`**Player:** ${playerName}`);
 
     for (const registration of registrations) {
       try {
@@ -96,8 +98,6 @@ export class MyStatusService {
         } else {
           registrationDetails += '**Room:** *Not assigned yet*\n';
         }
-
-        registrationDetails += `**Session ID:** ${registration.session_id}`;
 
         embed.addFields({
           name: `📅 ${registration.week}`,

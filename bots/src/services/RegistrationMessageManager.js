@@ -197,7 +197,13 @@ class RegistrationMessageManager {
       .setStyle(ButtonStyle.Success)
       .setEmoji('🏌️');
 
-    const row = new ActionRowBuilder().addComponents(button);
+    const myRoomButton = new ButtonBuilder()
+      .setCustomId('reg_my_room')
+      .setLabel('My Room')
+      .setStyle(ButtonStyle.Primary);
+      // .setEmoji('🏠');
+      
+    const row = new ActionRowBuilder().addComponents(button, myRoomButton);
 
     return { embeds: [embed], components: [row] };
   }
@@ -247,8 +253,8 @@ class RegistrationMessageManager {
     const myRoomButton = new ButtonBuilder()
       .setCustomId('reg_my_room')
       .setLabel('My Room')
-      .setStyle(ButtonStyle.Primary)
-      .setEmoji('🏠');
+      .setStyle(ButtonStyle.Primary);
+//      .setEmoji('🏠');
 
     const row = new ActionRowBuilder().addComponents(button, myRoomButton);
 
