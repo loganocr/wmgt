@@ -360,8 +360,16 @@ export class DiscordTournamentBot {
       // Start health check server
       this.healthCheckServer.start();
 
-      // Register slash commands
-      await this.registerSlashCommands();
+      // Register slash commands (best-effort).
+      // If Discord API is slow/unavailable, continue startup so the bot can still run.
+      try {
+        await this.registerSlashCommands();
+      } catch (error) {
+        this.logger.warn('Continuing startup without refreshing slash commands', {
+          error: error.message,
+          stack: error.stack
+        });
+      }
 
       // Login to Discord with rate limiting
       await this.rateLimitHandler.executeRequest(
