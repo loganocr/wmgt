@@ -305,8 +305,8 @@ class RegistrationButtonHandler {
           );
         } else if (buttonInteraction.customId === 'reg_cancel') {
           buttonCollector.stop('cancelled');
-          await interaction.editReply({
-            content: '❌ Registration cancelled.',
+          await buttonInteraction.update({
+            content: '👌 Registration cancelled.',
             embeds: [],
             components: []
           });
