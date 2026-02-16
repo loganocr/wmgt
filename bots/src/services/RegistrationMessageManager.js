@@ -172,7 +172,7 @@ class RegistrationMessageManager {
       const slotList = tournamentData.sessions.available_time_slots
         .map(s => '`' + s.time_slot + ' UTC`' + ' <t:' + s.session_date_epoch + ':t>')
         .join('\n');
-      embed.addFields({ name: 'Time Slots (UTC)', value: slotList, inline: false });
+      embed.addFields({ name: 'Time Slots (UTC & Local)', value: slotList, inline: false });
     }
 
     if (tournamentData.sessions?.close_registration_on) {
