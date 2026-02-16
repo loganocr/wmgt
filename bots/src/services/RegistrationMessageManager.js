@@ -170,14 +170,13 @@ class RegistrationMessageManager {
 
     if (Array.isArray(tournamentData.sessions.available_time_slots) && tournamentData.sessions.available_time_slots.length > 0) {
       const slotList = tournamentData.sessions.available_time_slots
-        .map(s =>
-            '`' + 
-            s.time_slot + ' UTC` ' + 
-            '`' +
-            `(${s.player_count === 0 ? ' - ' : `${s.player_count.toString().padStart(2, ' ')}p`})` +
-            '` ' +
-            ' <t:' + s.session_date_epoch + ':t> '
-        ).join('\n');
+        .map(s => {
+          const playerCount = Number.isFinite(Number(s.player_count)) ? Number(s.player_count) : 0;
+          const playerCountDisplay = playerCount === 0 ? ' - ' : `${playerCount.toString().padStart(2, ' ')}p`;
+          const localTime = s.session_date_epoch ? ` <t:${s.session_date_epoch}:t> ` : '';
+          return '`' + s.time_slot + ' UTC` ' + '`' + `(${playerCountDisplay})` + '`' + localTime;
+        })
+        .join('\n');
 
       const totalPlayers = tournamentData.sessions.available_time_slots
         .reduce((sum, s) => sum + (s.player_count || 0), 0);
@@ -225,12 +224,12 @@ class RegistrationMessageManager {
 
     if (Array.isArray(tournamentData.sessions.available_time_slots) && tournamentData.sessions.available_time_slots.length > 0) {
       const slotList = tournamentData.sessions.available_time_slots
-        .map(s => 
-            '`' + 
-            s.time_slot + ' UTC` ' + 
-            `(\`${s.player_count.toString().padStart(2, ' ')}p\`) ` +
-           (s.time_slot_status === "done" ? '✅' : s.time_slot_status === 'current' ? '⬅️' : '⬜' ) + ' <t:' + s.session_date_epoch + ':t> '
-        )
+        .map(s => {
+          const playerCount = Number.isFinite(Number(s.player_count)) ? Number(s.player_count) : 0;
+          const marker = s.time_slot_status === 'done' ? '✅' : s.time_slot_status === 'current' ? '⬅️' : '⬜';
+          const localTime = s.session_date_epoch ? ` <t:${s.session_date_epoch}:t> ` : '';
+          return '`' + s.time_slot + ' UTC` ' + `(\`${playerCount.toString().padStart(2, ' ')}p\`) ` + marker + localTime;
+        })
         .join('\n');
       embed.addFields({ name: 'Time Slots (UTC & Local)', value: slotList, inline: false });
     }
@@ -245,7 +244,13 @@ class RegistrationMessageManager {
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(true);
 
-    const row = new ActionRowBuilder().addComponents(button);
+    const myRoomButton = new ButtonBuilder()
+      .setCustomId('reg_my_room')
+      .setLabel('My Room')
+      .setStyle(ButtonStyle.Primary)
+      .setEmoji('🏠');
+
+    const row = new ActionRowBuilder().addComponents(button, myRoomButton);
 
     return { embeds: [embed], components: [row] };
   }

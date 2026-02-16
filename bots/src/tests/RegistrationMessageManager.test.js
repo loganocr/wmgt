@@ -133,8 +133,8 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
         session_date: futureSession,
         courses: [{ course_name: 'Sweetopia' }, { course_name: 'Labyrinth' }],
         available_time_slots: [
-          { time_slot: '22:00', day_offset: -1 },
-          { time_slot: '02:00', day_offset: 0 }
+          { time_slot: '22:00', day_offset: -1, player_count: 5, session_date_epoch: 1723327200 },
+          { time_slot: '02:00', day_offset: 0, player_count: 7, session_date_epoch: 1723341600 }
         ]
       }
     };
@@ -149,7 +149,7 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     const fieldNames = embed.fields.map(f => f.name);
     expect(fieldNames).toContain('Session Date');
     expect(fieldNames).toContain('Courses');
-    expect(fieldNames).toContain('Time Slots (UTC)');
+    expect(fieldNames).toContain('Time Slots: UTC (Players) Local Time');
     expect(fieldNames).toContain('Registration Closes');
 
     // Check courses field content
@@ -158,7 +158,7 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     expect(coursesField.value).toContain('Labyrinth');
 
     // Check time slots field content
-    const slotsField = embed.fields.find(f => f.name === 'Time Slots (UTC)');
+    const slotsField = embed.fields.find(f => f.name === 'Time Slots: UTC (Players) Local Time');
     expect(slotsField.value).toContain('22:00 UTC');
     expect(slotsField.value).toContain('02:00 UTC');
 
@@ -183,7 +183,7 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
         close_registration_on: futureClose,
         session_date: sessionDate,
         courses: [{ course_name: 'Course A' }],
-        available_time_slots: [{ time_slot: '20:00', day_offset: 0 }]
+        available_time_slots: [{ time_slot: '20:00', day_offset: 0, player_count: 4, session_date_epoch: 1723327200 }]
       }
     };
 
@@ -207,7 +207,7 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
         close_registration_on: futureClose,
         session_date: futureSession,
         courses: [{ course_name: 'Course A' }],
-        available_time_slots: [{ time_slot: '20:00', day_offset: 0 }]
+        available_time_slots: [{ time_slot: '20:00', day_offset: 0, player_count: 4, session_date_epoch: 1723327200 }]
       }
     };
 
@@ -241,18 +241,27 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
 
     const embed = result.embeds[0].toJSON();
     expect(embed.color).toBe(0xFFA500);
-    expect(embed.title).toBe('🏆 Week 42 (In Progress) ⛳️');
+    expect(embed.title).toBe('⛳️ 🏆 Week 42 (In Progress) <:gameon:1336174091828465734>');
 
     // Check time slots field
     const slotsField = embed.fields.find(f => f.name === 'Time Slots (UTC & Local)');
     expect(slotsField.value).toContain('UTC');
 
-    // Check button is disabled
-    const button = result.components[0].toJSON().components[0];
-    expect(button.custom_id).toBe('reg_register');
-    expect(button.label).toBe('Tournament In Progress');
-    expect(button.style).toBe(2); // Secondary
-    expect(button.disabled).toBe(true);
+    // Check ongoing buttons
+    const buttons = result.components[0].toJSON().components;
+    expect(buttons).toHaveLength(2);
+
+    const statusButton = buttons[0];
+    expect(statusButton.custom_id).toBe('reg_register');
+    expect(statusButton.label).toBe('Tournament In Progress');
+    expect(statusButton.style).toBe(2); // Secondary
+    expect(statusButton.disabled).toBe(true);
+
+    const myRoomButton = buttons[1];
+    expect(myRoomButton.custom_id).toBe('reg_my_room');
+    expect(myRoomButton.label).toBe('My Room');
+    expect(myRoomButton.style).toBe(1); // Primary
+    expect(myRoomButton.disabled).toBeFalsy();
   });
 
   // --- edge cases ---
@@ -270,7 +279,7 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
         close_registration_on: futureClose,
         session_date: futureSession,
         courses: [],
-        available_time_slots: [{ time_slot: '20:00', day_offset: 0 }]
+        available_time_slots: [{ time_slot: '20:00', day_offset: 0, player_count: 4, session_date_epoch: 1723327200 }]
       }
     };
 
@@ -300,7 +309,7 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     const result = manager.buildRegistrationMessage(data);
     const embed = result.embeds[0].toJSON();
     const fieldNames = embed.fields.map(f => f.name);
-    expect(fieldNames).not.toContain('Time Slots (UTC)');
+    expect(fieldNames).not.toContain('Time Slots: UTC (Players) Local Time');
   });
 
   it('should always return exactly one embed and one component row', () => {
@@ -320,7 +329,7 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
         close_registration_on: futureClose,
         session_date: moment.utc().add(5, 'days').format('YYYY-MM-DD'),
         courses: [{ course_name: 'C' }],
-        available_time_slots: [{ time_slot: '20:00', day_offset: 0 }]
+        available_time_slots: [{ time_slot: '20:00', day_offset: 0, player_count: 4, session_date_epoch: 1723327200 }]
       }
     });
     expect(result.embeds).toHaveLength(1);
@@ -343,7 +352,7 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
         close_registration_on: futureClose,
         session_date: moment.utc().add(5, 'days').format('YYYY-MM-DD'),
         courses: [],
-        available_time_slots: [{ time_slot: '20:00', day_offset: 0 }]
+        available_time_slots: [{ time_slot: '20:00', day_offset: 0, player_count: 4, session_date_epoch: 1723327200 }]
       }
     }).components[0].toJSON().components[0];
     expect(button.custom_id).toBe('reg_register');
@@ -352,7 +361,7 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     const now = moment.utc();
     const ongoingSlotTime = now.clone().subtract(1, 'hour').format('HH:mm');
     const ongoingSlotEpoch = now.clone().subtract(1, 'hour').startOf('minute').unix();
-    button = manager.buildRegistrationMessage({
+    const ongoingButtons = manager.buildRegistrationMessage({
       tournament: { name: 'T' },
       sessions: {
         tournament_state: 'ongoing',
@@ -360,8 +369,9 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
         session_date: now.clone().startOf('day').format('YYYY-MM-DD'),
         available_time_slots: [{ time_slot: ongoingSlotTime, day_offset: 0, player_count: 4, time_slot_status: 'current', session_date_epoch: ongoingSlotEpoch }]
       }
-    }).components[0].toJSON().components[0];
-    expect(button.custom_id).toBe('reg_register');
+    }).components[0].toJSON().components;
+    expect(ongoingButtons[0].custom_id).toBe('reg_register');
+    expect(ongoingButtons[1].custom_id).toBe('reg_my_room');
   });
 });
 

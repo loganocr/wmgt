@@ -218,6 +218,10 @@ export class DiscordTournamentBot {
           await this.registrationButtonHandler.handleRegisterButton(interaction);
           return;
         }
+        if (interaction.isButton() && interaction.customId === 'reg_my_room') {
+          await this.registrationButtonHandler.handleMyRoomButton(interaction);
+          return;
+        }
 
         // Component interactions are handled by the commands themselves
         // This is just for logging and error handling

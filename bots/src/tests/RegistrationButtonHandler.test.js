@@ -27,7 +27,12 @@ function createMockInteraction(userId = '123456789') {
   return {
     deferReply: vi.fn().mockResolvedValue(undefined),
     editReply: vi.fn().mockResolvedValue(mockMessage),
-    user: { id: userId, username: 'TestPlayer' },
+    user: {
+      id: userId,
+      username: 'TestPlayer',
+      displayName: 'Test Player',
+      displayAvatarURL: vi.fn().mockReturnValue('https://example.com/avatar.png')
+    },
     _mockMessage: mockMessage,
     _mockCollector: mockCollector
   };
@@ -316,6 +321,48 @@ describe('RegistrationButtonHandler', () => {
     });
   });
 
+  describe('handleMyRoomButton', () => {
+    it('should defer reply as ephemeral', async () => {
+      await handler.handleMyRoomButton(interaction);
+
+      expect(interaction.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+    });
+
+    it('should fetch player registrations and reply with embed', async () => {
+      services.timezoneService.getUserTimezone.mockResolvedValue('UTC');
+      services.timezoneService.validateTimezone = vi.fn().mockReturnValue(true);
+      services.registrationService.getPlayerRegistrations.mockResolvedValue({
+        player: { name: 'Test Player' },
+        registrations: [{
+          week: 'Week 42',
+          session_date_epoch: 1723327200,
+          session_date_formatted: 'Sat, Aug 10, 2024 10:00 PM UTC',
+          room_no: 2,
+          room_players: [{ player_name: 'Test Player', isNew: false }],
+          session_id: 42,
+          courses: []
+        }]
+      });
+
+      await handler.handleMyRoomButton(interaction);
+
+      expect(services.registrationService.getPlayerRegistrations).toHaveBeenCalledWith(interaction.user.id);
+      expect(interaction.editReply).toHaveBeenCalledWith(expect.objectContaining({
+        embeds: expect.any(Array)
+      }));
+    });
+
+    it('should return fallback error message when status loading fails', async () => {
+      services.timezoneService.getUserTimezone.mockRejectedValue(new Error('service down'));
+
+      await handler.handleMyRoomButton(interaction);
+
+      expect(interaction.editReply).toHaveBeenCalledWith(expect.objectContaining({
+        content: expect.stringContaining('Could not load your room status')
+      }));
+    });
+  });
+
   describe('handleOngoingTournament', () => {
     it('should reply with lockout message', async () => {
       const tournamentData = {
@@ -429,7 +476,10 @@ describe('RegistrationButtonHandler', () => {
 
       await confirmCollector._emit('collect', confirmInteraction);
 
-      expect(services.registrationService.unregisterPlayer).toHaveBeenCalledWith('123456789', 42);
+      expect(services.registrationService.unregisterPlayer).toHaveBeenCalledWith(
+        expect.objectContaining({ id: '123456789' }),
+        42
+      );
       expect(confirmInteraction.deferUpdate).toHaveBeenCalled();
 
       const lastCall = interaction.editReply.mock.calls[interaction.editReply.mock.calls.length - 1][0];
@@ -472,7 +522,7 @@ describe('RegistrationButtonHandler', () => {
 
       expect(cancelInteraction.update).toHaveBeenCalled();
       const updateArgs = cancelInteraction.update.mock.calls[0][0];
-      expect(updateArgs.content).toContain('cancelled');
+      expect(updateArgs.content).toContain('unchanged');
       expect(updateArgs.embeds).toEqual([]);
       expect(updateArgs.components).toEqual([]);
     });
@@ -551,17 +601,16 @@ describe('RegistrationButtonHandler', () => {
       expect(embed.fields.some(f => f.value.includes('Week 3'))).toBe(true);
     });
 
-    it('should include time slot with Discord epoch timestamp when epoch is available', async () => {
+    it('should include signed-up date with Discord epoch timestamp when epoch is available', async () => {
       await handler.handleExistingRegistration(interaction, registrationData, tournamentData);
 
       const embed = interaction.editReply.mock.calls[0][0].embeds[0].data;
-      const timeField = embed.fields.find(f => f.name.includes('Time Slot'));
-      expect(timeField).toBeDefined();
-      expect(timeField.value).toContain('22:00 UTC');
-      expect(timeField.value).toContain('<t:1723327200:t>');
+      const signedUpField = embed.fields.find(f => f.name.includes('Signed up for'));
+      expect(signedUpField).toBeDefined();
+      expect(signedUpField.value).toContain('<t:1723327200:f>');
     });
 
-    it('should show UTC-only time slot when no epoch is available', async () => {
+    it('should show fallback session date when epoch is unavailable', async () => {
       const noEpochTournament = {
         ...tournamentData,
         sessions: {
@@ -576,16 +625,16 @@ describe('RegistrationButtonHandler', () => {
       await handler.handleExistingRegistration(interaction, registrationData, noEpochTournament);
 
       const embed = interaction.editReply.mock.calls[0][0].embeds[0].data;
-      const timeField = embed.fields.find(f => f.name.includes('Time Slot'));
-      expect(timeField.value).toBe('22:00 UTC');
+      const signedUpField = embed.fields.find(f => f.name.includes('Signed up for'));
+      expect(signedUpField.value).toBe('2024-08-10');
     });
 
     it('should include session date with Discord epoch timestamp', async () => {
       await handler.handleExistingRegistration(interaction, registrationData, tournamentData);
 
       const embed = interaction.editReply.mock.calls[0][0].embeds[0].data;
-      const dateField = embed.fields.find(f => f.name.includes('Session Date'));
-      expect(dateField.value).toContain('<t:1723327200:D>');
+      const dateField = embed.fields.find(f => f.name.includes('Signed up for'));
+      expect(dateField.value).toContain('<t:1723327200:f>');
     });
 
     it('should include "Change Time Slot" and "Unregister" buttons', async () => {
@@ -634,7 +683,7 @@ describe('RegistrationButtonHandler', () => {
 
       // handleTimeSlotChange should have called unregisterPlayer
       expect(services.registrationService.unregisterPlayer).toHaveBeenCalledWith(
-        '123456789',
+        expect.objectContaining({ id: '123456789' }),
         42
       );
     });
@@ -754,7 +803,7 @@ describe('RegistrationButtonHandler', () => {
       await handler.handleTimeSlotChange(interaction, currentRegistration, tournamentData);
 
       expect(services.registrationService.unregisterPlayer).toHaveBeenCalledWith(
-        '123456789',
+        expect.objectContaining({ id: '123456789' }),
         42
       );
     });

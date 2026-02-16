@@ -8,6 +8,7 @@ import {
 } from 'discord.js';
 import { config } from '../config/config.js';
 import { logger } from '../utils/Logger.js';
+import { MyStatusService } from './MyStatusService.js';
 
 /**
  * Handles all button and component interactions originating from the registration message.
@@ -18,7 +19,33 @@ class RegistrationButtonHandler {
     this.registrationService = registrationService;
     this.timezoneService = timezoneService;
     this.registrationMessageManager = registrationMessageManager;
+    this.myStatusService = new MyStatusService(registrationService, timezoneService);
     this.logger = logger.child({ service: 'RegistrationButtonHandler' });
+  }
+
+  /**
+   * Handle "My Room" button clicks from the ongoing registration message.
+   * Mirrors /mystatus output and response style.
+   *
+   * @param {import('discord.js').ButtonInteraction} interaction
+   */
+  async handleMyRoomButton(interaction) {
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch (deferError) {
+      this.logger.error('Failed to defer my-room reply — interaction may have expired', { error: deferError.message });
+      return;
+    }
+
+    try {
+      const payload = await this.myStatusService.buildStatusPayload(interaction.user);
+      await interaction.editReply(payload);
+    } catch (error) {
+      this.logger.error('Error handling my-room button', { error: error.message });
+      await interaction.editReply({
+        content: '⚠️ Could not load your room status right now. Please try again in a moment.'
+      }).catch(() => {});
+    }
   }
 
   /**
