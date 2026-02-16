@@ -173,14 +173,16 @@ class RegistrationMessageManager {
         .map(s =>
             '`' + 
             s.time_slot + ' UTC` ' + 
-            `(\`${s.player_count.toString().padStart(2, ' ')}p\`) ` +
+            '`' +
+            `(${s.player_count === 0 ? ' - ' : `${s.player_count.toString().padStart(2, ' ')}p`})` +
+            '` ' +
             ' <t:' + s.session_date_epoch + ':t> '
         ).join('\n');
 
       const totalPlayers = tournamentData.sessions.available_time_slots
         .reduce((sum, s) => sum + (s.player_count || 0), 0);
 
-      embed.addFields({ name: 'Time Slots: UTC (Players) Local Time)', value: slotList, inline: false });
+      embed.addFields({ name: 'Time Slots: UTC (Players) Local Time', value: slotList, inline: false });
       embed.addFields({ name: 'Total Players', value: totalPlayers.toString(), inline: true });
 
     }
