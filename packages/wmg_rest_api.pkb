@@ -344,7 +344,8 @@ begin
                  end,
                 'player_count' value (
                     select count(*) from wmg_tournament_players p 
-                     where p.tournament_session_id = wts.id and p.time_slot = ts.time_slot)
+                     where p.tournament_session_id = wts.id and p.time_slot = ts.time_slot
+                       and p.active_ind = 'Y')
               ) order by ts.seq
             )
             from wmg_time_slots_all_v ts
