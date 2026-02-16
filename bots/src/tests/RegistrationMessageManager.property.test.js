@@ -29,7 +29,7 @@ const DAY_OFFSETS = [-1, 0];
 
 const arbTimeSlot = () =>
   fc.record({
-    time: fc.constantFrom(...KNOWN_TIME_SLOTS),
+    time_slot: fc.constantFrom(...KNOWN_TIME_SLOTS),
     day_offset: fc.constantFrom(...DAY_OFFSETS)
   });
 
@@ -37,7 +37,7 @@ const arbTimeSlots = () =>
   fc.uniqueArray(arbTimeSlot(), {
     minLength: 1,
     maxLength: 5,
-    comparator: (a, b) => a.time === b.time && a.day_offset === b.day_offset
+    comparator: (a, b) => a.time_slot === b.time_slot && a.day_offset === b.day_offset
   });
 
 /**
@@ -52,11 +52,14 @@ const arbRegistrationOpenData = () =>
   }).map(({ timeSlots, futureCloseHours, sessionDaysAhead }) => {
     const now = moment.utc();
     return {
-      tournament_state: 'open',
-      registration_open: true,
-      close_registration_on: now.clone().add(futureCloseHours, 'hours').toISOString(),
-      session_date: now.clone().add(sessionDaysAhead, 'days').startOf('day').format('YYYY-MM-DD'),
-      available_time_slots: timeSlots
+      tournament: { name: 'Test Tournament' },
+      sessions: {
+        tournament_state: 'open',
+        registration_open: true,
+        close_registration_on: now.clone().add(futureCloseHours, 'hours').toISOString(),
+        session_date: now.clone().add(sessionDaysAhead, 'days').startOf('day').format('YYYY-MM-DD'),
+        available_time_slots: timeSlots
+      }
     };
   });
 
@@ -71,11 +74,14 @@ const arbOngoingData = () =>
   }).map(({ timeSlots, sessionDaysAhead }) => {
     const now = moment.utc();
     return {
-      tournament_state: 'ongoing',
-      registration_open: false,
-      close_registration_on: now.clone().subtract(1, 'day').toISOString(),
-      session_date: now.clone().add(sessionDaysAhead, 'days').startOf('day').format('YYYY-MM-DD'),
-      available_time_slots: timeSlots
+      tournament: { name: 'Test Tournament' },
+      sessions: {
+        tournament_state: 'ongoing',
+        registration_open: false,
+        close_registration_on: now.clone().subtract(1, 'day').toISOString(),
+        session_date: now.clone().add(sessionDaysAhead, 'days').startOf('day').format('YYYY-MM-DD'),
+        available_time_slots: timeSlots
+      }
     };
   });
 
@@ -91,11 +97,14 @@ const arbClosedData = () =>
     fc.integer({ min: 10, max: 30 }).map(daysAhead => {
       const now = moment.utc();
       return {
-        tournament_state: 'closed',
-        registration_open: false,
-        close_registration_on: now.clone().subtract(1, 'day').toISOString(),
-        session_date: now.clone().add(daysAhead, 'days').startOf('day').format('YYYY-MM-DD'),
-        available_time_slots: [{ time: '22:00', day_offset: -1 }]
+        tournament: { name: 'Test Tournament' },
+        sessions: {
+          tournament_state: 'closed',
+          registration_open: false,
+          close_registration_on: now.clone().subtract(1, 'day').toISOString(),
+          session_date: now.clone().add(daysAhead, 'days').startOf('day').format('YYYY-MM-DD'),
+          available_time_slots: [{ time_slot: '22:00', day_offset: -1 }]
+        }
       };
     })
   );
@@ -210,14 +219,16 @@ const arbFullTournamentData = () =>
   }).map(({ tournament_name, week, sessionDaysAhead, futureCloseHours, courses, timeSlots }) => {
     const now = moment.utc();
     return {
-      tournament_state: 'open',
-      tournament_name,
-      week,
-      registration_open: true,
-      close_registration_on: now.clone().add(futureCloseHours, 'hours').toISOString(),
-      session_date: now.clone().add(sessionDaysAhead, 'days').startOf('day').format('YYYY-MM-DD'),
-      courses,
-      available_time_slots: timeSlots
+      tournament: { name: tournament_name },
+      sessions: {
+        tournament_state: 'open',
+        week,
+        registration_open: true,
+        close_registration_on: now.clone().add(futureCloseHours, 'hours').toISOString(),
+        session_date: now.clone().add(sessionDaysAhead, 'days').startOf('day').format('YYYY-MM-DD'),
+        courses: courses.map(c => ({ course_name: c.name })),
+        available_time_slots: timeSlots
+      }
     };
   });
 
@@ -225,53 +236,56 @@ const arbModifiedPair = () =>
   arbFullTournamentData().chain((base) => {
     return fc.constantFrom('tournament_name', 'week', 'courses', 'time_slots', 'tournament_state', 'close_registration_on', 'session_date')
       .chain((field) => {
-        const modified = { ...base, courses: [...base.courses], available_time_slots: [...base.available_time_slots] };
+        const modified = {
+          tournament: { ...base.tournament },
+          sessions: { ...base.sessions, courses: [...base.sessions.courses], available_time_slots: [...base.sessions.available_time_slots] }
+        };
 
         switch (field) {
           case 'tournament_name':
-            return fc.constantFrom(...TOURNAMENT_NAMES.filter(n => n !== base.tournament_name).concat(['WMGT Special Event']))
+            return fc.constantFrom(...TOURNAMENT_NAMES.filter(n => n !== base.tournament.name).concat(['WMGT Special Event']))
               .map(name => {
-                modified.tournament_name = name;
+                modified.tournament.name = name;
                 return { base, modified };
               });
 
           case 'week':
-            return fc.constantFrom(...WEEKS.filter(w => w !== base.week).concat(['Week 7']))
+            return fc.constantFrom(...WEEKS.filter(w => w !== base.sessions.week).concat(['Week 7']))
               .map(week => {
-                modified.week = week;
+                modified.sessions.week = week;
                 return { base, modified };
               });
 
           case 'courses':
             return arbCourses()
-              .filter(c => JSON.stringify(c) !== JSON.stringify(base.courses))
+              .filter(c => JSON.stringify(c) !== JSON.stringify(base.sessions.courses))
               .map(courses => {
-                modified.courses = courses;
+                modified.sessions.courses = courses.map(c => ({ course_name: c.name }));
                 return { base, modified };
               });
 
           case 'time_slots':
             return arbTimeSlots()
-              .filter(ts => JSON.stringify(ts) !== JSON.stringify(base.available_time_slots))
+              .filter(ts => JSON.stringify(ts) !== JSON.stringify(base.sessions.available_time_slots))
               .map(timeSlots => {
-                modified.available_time_slots = timeSlots;
+                modified.sessions.available_time_slots = timeSlots;
                 return { base, modified };
               });
 
           case 'tournament_state':
             // Change state to closed — this changes the derived state entirely
-            modified.tournament_state = 'closed';
-            modified.registration_open = false;
+            modified.sessions.tournament_state = 'closed';
+            modified.sessions.registration_open = false;
             return fc.constant({ base, modified });
 
           case 'close_registration_on':
             return fc.integer({ min: 1, max: 72 })
               .filter(h => {
                 const newClose = moment.utc().add(h, 'hours').toISOString();
-                return newClose !== base.close_registration_on;
+                return newClose !== base.sessions.close_registration_on;
               })
               .map(h => {
-                modified.close_registration_on = moment.utc().add(h, 'hours').toISOString();
+                modified.sessions.close_registration_on = moment.utc().add(h, 'hours').toISOString();
                 return { base, modified };
               });
 
@@ -279,10 +293,10 @@ const arbModifiedPair = () =>
             return fc.integer({ min: 0, max: 14 })
               .filter(d => {
                 const newDate = moment.utc().add(d, 'days').startOf('day').format('YYYY-MM-DD');
-                return newDate !== base.session_date;
+                return newDate !== base.sessions.session_date;
               })
               .map(d => {
-                modified.session_date = moment.utc().add(d, 'days').startOf('day').format('YYYY-MM-DD');
+                modified.sessions.session_date = moment.utc().add(d, 'days').startOf('day').format('YYYY-MM-DD');
                 return { base, modified };
               });
 

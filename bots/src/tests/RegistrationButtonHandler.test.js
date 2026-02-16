@@ -167,12 +167,14 @@ describe('RegistrationButtonHandler', () => {
 
     describe('when tournament state is "ongoing"', () => {
       const tournamentData = {
-        tournament_name: 'WMGT Season 5',
-        week: 'Week 3',
-        available_time_slots: [
-          { time: '22:00', day_offset: -1 },
-          { time: '02:00', day_offset: 0 }
-        ]
+        tournament: { name: 'WMGT Season 5' },
+        sessions: {
+          week: 'Week 3',
+          available_time_slots: [
+            { time_slot: '22:00', day_offset: -1 },
+            { time_slot: '02:00', day_offset: 0 }
+          ]
+        }
       };
 
       beforeEach(() => {
@@ -227,12 +229,14 @@ describe('RegistrationButtonHandler', () => {
 
     describe('when tournament state is "registration_open"', () => {
       const tournamentData = {
-        tournament_name: 'WMGT Season 5',
-        week: 'Week 3',
-        session_id: 42,
-        session_date: '2024-08-10',
-        registration_open: true,
-        available_time_slots: [{ time: '22:00', day_offset: -1 }]
+        tournament: { name: 'WMGT Season 5' },
+        sessions: {
+          id: 42,
+          week: 'Week 3',
+          session_date: '2024-08-10',
+          registration_open: true,
+          available_time_slots: [{ time_slot: '22:00', day_offset: -1 }]
+        }
       };
 
       const formattedSlots = [{
@@ -315,7 +319,9 @@ describe('RegistrationButtonHandler', () => {
   describe('handleOngoingTournament', () => {
     it('should reply with lockout message', async () => {
       const tournamentData = {
-        available_time_slots: [{ time: '22:00', day_offset: -1 }]
+        sessions: {
+          available_time_slots: [{ time_slot: '22:00', day_offset: -1 }]
+        }
       };
 
       await handler.handleOngoingTournament(interaction, tournamentData);
@@ -328,10 +334,12 @@ describe('RegistrationButtonHandler', () => {
 
     it('should include time slots in the message', async () => {
       const tournamentData = {
-        available_time_slots: [
-          { time: '22:00', day_offset: -1 },
-          { time: '04:00', day_offset: 0 }
-        ]
+        sessions: {
+          available_time_slots: [
+            { time_slot: '22:00', day_offset: -1 },
+            { time_slot: '04:00', day_offset: 0 }
+          ]
+        }
       };
 
       await handler.handleOngoingTournament(interaction, tournamentData);
@@ -342,7 +350,7 @@ describe('RegistrationButtonHandler', () => {
     });
 
     it('should handle empty time slots gracefully', async () => {
-      const tournamentData = { available_time_slots: [] };
+      const tournamentData = { sessions: { available_time_slots: [] } };
 
       await handler.handleOngoingTournament(interaction, tournamentData);
 
@@ -352,7 +360,7 @@ describe('RegistrationButtonHandler', () => {
     });
 
     it('should handle missing time slots gracefully', async () => {
-      const tournamentData = {};
+      const tournamentData = { sessions: {} };
 
       await handler.handleOngoingTournament(interaction, tournamentData);
 
@@ -495,39 +503,20 @@ describe('RegistrationButtonHandler', () => {
     };
 
     const tournamentData = {
-      tournament_name: 'WMGT Season 5',
-      week: 'Week 3',
-      session_id: 42,
-      session_date: '2024-08-10',
-      available_time_slots: [
-        { time: '22:00', day_offset: -1 },
-        { time: '02:00', day_offset: 0 }
-      ]
+      tournament: { name: 'WMGT Season 5' },
+      sessions: {
+        id: 42,
+        week: 'Week 3',
+        session_date: '2024-08-10',
+        available_time_slots: [
+          { time_slot: '22:00', day_offset: -1, session_date_epoch: 1723327200 },
+          { time_slot: '02:00', day_offset: 0, session_date_epoch: 1723341600 }
+        ]
+      }
     };
-
-    const formattedSlots = [{
-      value: { time_slot: '22:00', day_offset: 0 },
-      utcTime: '22:00',
-      utcDate: 'Aug 10',
-      localTime: '6:00 PM',
-      localDate: 'Aug 10',
-      localTimezone: 'EDT',
-      dateChanged: false,
-      display: '6:00 PM EDT (22:00 UTC)'
-    }];
 
     beforeEach(() => {
       services.timezoneService.getUserTimezone.mockResolvedValue('America/New_York');
-      services.timezoneService.formatTournamentTimeSlots.mockReturnValue(formattedSlots);
-    });
-
-    it('should get the player timezone', async () => {
-      await handler.handleExistingRegistration(interaction, registrationData, tournamentData);
-
-      expect(services.timezoneService.getUserTimezone).toHaveBeenCalledWith(
-        services.registrationService,
-        '123456789'
-      );
     });
 
     it('should display an embed with title "📋 Your Current Registration"', async () => {
@@ -562,32 +551,41 @@ describe('RegistrationButtonHandler', () => {
       expect(embed.fields.some(f => f.value.includes('Week 3'))).toBe(true);
     });
 
-    it('should include time slot with local time when timezone is set', async () => {
+    it('should include time slot with Discord epoch timestamp when epoch is available', async () => {
       await handler.handleExistingRegistration(interaction, registrationData, tournamentData);
 
       const embed = interaction.editReply.mock.calls[0][0].embeds[0].data;
       const timeField = embed.fields.find(f => f.name.includes('Time Slot'));
       expect(timeField).toBeDefined();
-      expect(timeField.value).toContain('6:00 PM');
-      expect(timeField.value).toContain('EDT');
       expect(timeField.value).toContain('22:00 UTC');
+      expect(timeField.value).toContain('<t:1723327200:t>');
     });
 
-    it('should show UTC-only time slot when timezone is UTC', async () => {
-      services.timezoneService.getUserTimezone.mockResolvedValue('UTC');
+    it('should show UTC-only time slot when no epoch is available', async () => {
+      const noEpochTournament = {
+        ...tournamentData,
+        sessions: {
+          ...tournamentData.sessions,
+          available_time_slots: [
+            { time_slot: '22:00', day_offset: -1 },
+            { time_slot: '02:00', day_offset: 0 }
+          ]
+        }
+      };
 
-      await handler.handleExistingRegistration(interaction, registrationData, tournamentData);
+      await handler.handleExistingRegistration(interaction, registrationData, noEpochTournament);
 
       const embed = interaction.editReply.mock.calls[0][0].embeds[0].data;
       const timeField = embed.fields.find(f => f.name.includes('Time Slot'));
       expect(timeField.value).toBe('22:00 UTC');
     });
 
-    it('should include session date in embed fields', async () => {
+    it('should include session date with Discord epoch timestamp', async () => {
       await handler.handleExistingRegistration(interaction, registrationData, tournamentData);
 
       const embed = interaction.editReply.mock.calls[0][0].embeds[0].data;
-      expect(embed.fields.some(f => f.value.includes('2024-08-10'))).toBe(true);
+      const dateField = embed.fields.find(f => f.name.includes('Session Date'));
+      expect(dateField.value).toContain('<t:1723327200:D>');
     });
 
     it('should include "Change Time Slot" and "Unregister" buttons', async () => {
@@ -695,6 +693,7 @@ describe('RegistrationButtonHandler', () => {
       await handler.handleExistingRegistration(interaction, sparseRegistration, tournamentData);
 
       const embed = interaction.editReply.mock.calls[0][0].embeds[0].data;
+      // Falls back to tournamentData.tournament.name and tournamentData.sessions.week
       expect(embed.fields.some(f => f.value.includes('WMGT Season 5'))).toBe(true);
       expect(embed.fields.some(f => f.value.includes('Week 3'))).toBe(true);
     });
@@ -710,14 +709,16 @@ describe('RegistrationButtonHandler', () => {
     };
 
     const tournamentData = {
-      tournament_name: 'WMGT Season 5',
-      week: 'Week 3',
-      session_id: 42,
-      session_date: '2024-08-10',
-      available_time_slots: [
-        { time: '22:00', day_offset: -1 },
-        { time: '02:00', day_offset: 0 }
-      ]
+      tournament: { name: 'WMGT Season 5' },
+      sessions: {
+        id: 42,
+        week: 'Week 3',
+        session_date: '2024-08-10',
+        available_time_slots: [
+          { time_slot: '22:00', day_offset: -1 },
+          { time_slot: '02:00', day_offset: 0 }
+        ]
+      }
     };
 
     const formattedSlots = [
@@ -883,14 +884,17 @@ describe('RegistrationButtonHandler', () => {
 
   describe('handleNewRegistration', () => {
     const tournamentData = {
-      tournament_name: 'WMGT Season 5',
-      week: 'Week 3',
-      session_id: 42,
-      session_date: '2024-08-10',
-      available_time_slots: [
-        { time: '22:00', day_offset: -1 },
-        { time: '02:00', day_offset: 0 }
-      ]
+      tournament: { name: 'WMGT Season 5' },
+      sessions: {
+        id: 42,
+        week: 'Week 3',
+        session_date: '2024-08-10',
+        courses: [{ course_name: 'Sweetopia' }, { course_name: 'Labyrinth' }],
+        available_time_slots: [
+          { time_slot: '22:00', day_offset: -1 },
+          { time_slot: '02:00', day_offset: 0 }
+        ]
+      }
     };
 
     const formattedSlots = [
@@ -934,8 +938,8 @@ describe('RegistrationButtonHandler', () => {
       await handler.handleNewRegistration(interaction, tournamentData);
 
       expect(services.timezoneService.formatTournamentTimeSlots).toHaveBeenCalledWith(
-        tournamentData.available_time_slots,
-        tournamentData.session_date,
+        tournamentData.sessions.available_time_slots,
+        tournamentData.sessions.session_date,
         'America/New_York'
       );
     });
@@ -1013,12 +1017,17 @@ describe('RegistrationButtonHandler', () => {
           createMessageComponentCollector: vi.fn().mockReturnValue(confirmCollector)
         };
 
+        // First editReply returns the select menu message (from handleNewRegistration),
+        // second editReply returns the confirmation message (from _handleTimeSlotConfirmation)
+        interaction.editReply
+          .mockResolvedValueOnce(interaction._mockMessage)
+          .mockResolvedValue(confirmMessage);
+
         selectInteraction = {
           customId: 'reg_timeslot_select',
           values: ['22:00'],
           user: { id: '123456789', username: 'TestPlayer' },
-          deferUpdate: vi.fn().mockResolvedValue(undefined),
-          editReply: vi.fn().mockResolvedValue(confirmMessage)
+          deferUpdate: vi.fn().mockResolvedValue(undefined)
         };
       });
 
@@ -1029,9 +1038,10 @@ describe('RegistrationButtonHandler', () => {
         await interaction._mockCollector._emit('collect', selectInteraction);
 
         expect(selectInteraction.deferUpdate).toHaveBeenCalled();
-        expect(selectInteraction.editReply).toHaveBeenCalled();
 
-        const replyArgs = selectInteraction.editReply.mock.calls[0][0];
+        // interaction.editReply call[0] = select menu, call[1] = confirmation embed
+        expect(interaction.editReply).toHaveBeenCalledTimes(2);
+        const replyArgs = interaction.editReply.mock.calls[1][0];
         expect(replyArgs.embeds).toBeDefined();
         expect(replyArgs.embeds.length).toBe(1);
         expect(replyArgs.components).toBeDefined();
@@ -1041,7 +1051,7 @@ describe('RegistrationButtonHandler', () => {
         await handler.handleNewRegistration(interaction, tournamentData);
         await interaction._mockCollector._emit('collect', selectInteraction);
 
-        const embed = selectInteraction.editReply.mock.calls[0][0].embeds[0];
+        const embed = interaction.editReply.mock.calls[1][0].embeds[0];
         const embedData = embed.data;
         expect(embedData.fields.some(f => f.value.includes('WMGT Season 5'))).toBe(true);
       });
@@ -1050,9 +1060,35 @@ describe('RegistrationButtonHandler', () => {
         await handler.handleNewRegistration(interaction, tournamentData);
         await interaction._mockCollector._emit('collect', selectInteraction);
 
-        const embed = selectInteraction.editReply.mock.calls[0][0].embeds[0];
+        const embed = interaction.editReply.mock.calls[1][0].embeds[0];
         const embedData = embed.data;
         expect(embedData.fields.some(f => f.value.includes('22:00'))).toBe(true);
+      });
+
+      it('should include courses in confirmation embed', async () => {
+        await handler.handleNewRegistration(interaction, tournamentData);
+        await interaction._mockCollector._emit('collect', selectInteraction);
+
+        const embed = interaction.editReply.mock.calls[1][0].embeds[0];
+        const embedData = embed.data;
+        const coursesField = embedData.fields.find(f => f.name.includes('Courses'));
+        expect(coursesField).toBeDefined();
+        expect(coursesField.value).toContain('Sweetopia');
+        expect(coursesField.value).toContain('Labyrinth');
+      });
+
+      it('should not include courses field when courses array is empty', async () => {
+        const noCourseData = {
+          ...tournamentData,
+          sessions: { ...tournamentData.sessions, courses: [] }
+        };
+
+        await handler.handleNewRegistration(interaction, noCourseData);
+        await interaction._mockCollector._emit('collect', selectInteraction);
+
+        const embed = interaction.editReply.mock.calls[1][0].embeds[0];
+        const embedData = embed.data;
+        expect(embedData.fields.every(f => !f.name.includes('Courses'))).toBe(true);
       });
 
       it('should stop the select collector after selection', async () => {

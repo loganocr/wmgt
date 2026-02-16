@@ -10,6 +10,9 @@ vi.mock('../config/config.js', () => ({
       pollingEndOffsetHrs: 8,
       pollIntervalMs: 60000,
       idlePollIntervalMs: 3600000
+    },
+    bot: {
+      tournamentMDurl: 'https://example.com/tournament'
     }
   }
 }));
@@ -52,27 +55,27 @@ describe('RegistrationMessageManager.deriveTournamentState', () => {
   });
 
   it('should return "registration_open" when tournament_state is "open"', () => {
-    const data = { tournament_state: 'open', tournament_name: 'Test', week: 'Week 1' };
+    const data = { tournament: { name: 'Test' }, sessions: { tournament_state: 'open', week: 'Week 1' } };
     expect(manager.deriveTournamentState(data)).toBe('registration_open');
   });
 
   it('should return "ongoing" when tournament_state is "ongoing"', () => {
-    const data = { tournament_state: 'ongoing', tournament_name: 'Test', week: 'Week 1' };
+    const data = { tournament: { name: 'Test' }, sessions: { tournament_state: 'ongoing', week: 'Week 1' } };
     expect(manager.deriveTournamentState(data)).toBe('ongoing');
   });
 
   it('should return "closed" when tournament_state is "closed"', () => {
-    const data = { tournament_state: 'closed', tournament_name: 'Test', week: 'Week 1' };
+    const data = { tournament: { name: 'Test' }, sessions: { tournament_state: 'closed', week: 'Week 1' } };
     expect(manager.deriveTournamentState(data)).toBe('closed');
   });
 
   it('should return "closed" when tournament_state is missing', () => {
-    const data = { tournament_name: 'Test', week: 'Week 1' };
+    const data = { tournament: { name: 'Test' }, sessions: { week: 'Week 1' } };
     expect(manager.deriveTournamentState(data)).toBe('closed');
   });
 
   it('should return "closed" for an unrecognized tournament_state value', () => {
-    const data = { tournament_state: 'unknown_value', tournament_name: 'Test' };
+    const data = { tournament: { name: 'Test' }, sessions: { tournament_state: 'unknown_value' } };
     expect(manager.deriveTournamentState(data)).toBe('closed');
   });
 });
@@ -121,17 +124,19 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     const futureSession = moment.utc().add(5, 'days').format('YYYY-MM-DD');
 
     const data = {
-      tournament_state: 'open',
-      tournament_name: 'Summer Classic',
-      week: 'Week 42',
-      registration_open: true,
-      close_registration_on: futureClose,
-      session_date: futureSession,
-      courses: [{ name: 'Sweetopia' }, { name: 'Labyrinth' }],
-      available_time_slots: [
-        { time: '22:00', day_offset: -1 },
-        { time: '02:00', day_offset: 0 }
-      ]
+      tournament: { name: 'Summer Classic' },
+      sessions: {
+        tournament_state: 'open',
+        week: 'Week 42',
+        registration_open: true,
+        close_registration_on: futureClose,
+        session_date: futureSession,
+        courses: [{ course_name: 'Sweetopia' }, { course_name: 'Labyrinth' }],
+        available_time_slots: [
+          { time_slot: '22:00', day_offset: -1 },
+          { time_slot: '02:00', day_offset: 0 }
+        ]
+      }
     };
 
     const result = manager.buildRegistrationMessage(data);
@@ -144,7 +149,7 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     const fieldNames = embed.fields.map(f => f.name);
     expect(fieldNames).toContain('Session Date');
     expect(fieldNames).toContain('Courses');
-    expect(fieldNames).toContain('Time Slots');
+    expect(fieldNames).toContain('Time Slots (UTC)');
     expect(fieldNames).toContain('Registration Closes');
 
     // Check courses field content
@@ -153,7 +158,7 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     expect(coursesField.value).toContain('Labyrinth');
 
     // Check time slots field content
-    const slotsField = embed.fields.find(f => f.name === 'Time Slots');
+    const slotsField = embed.fields.find(f => f.name === 'Time Slots (UTC)');
     expect(slotsField.value).toContain('22:00 UTC');
     expect(slotsField.value).toContain('02:00 UTC');
 
@@ -170,14 +175,16 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     const sessionDate = '2024-12-14';
 
     const data = {
-      tournament_state: 'open',
-      tournament_name: 'Test',
-      week: 'Week 1',
-      registration_open: true,
-      close_registration_on: futureClose,
-      session_date: sessionDate,
-      courses: [{ name: 'Course A' }],
-      available_time_slots: [{ time: '20:00', day_offset: 0 }]
+      tournament: { name: 'Test' },
+      sessions: {
+        tournament_state: 'open',
+        week: 'Week 1',
+        registration_open: true,
+        close_registration_on: futureClose,
+        session_date: sessionDate,
+        courses: [{ course_name: 'Course A' }],
+        available_time_slots: [{ time_slot: '20:00', day_offset: 0 }]
+      }
     };
 
     const result = manager.buildRegistrationMessage(data);
@@ -192,14 +199,16 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     const futureSession = moment.utc().add(5, 'days').format('YYYY-MM-DD');
 
     const data = {
-      tournament_state: 'open',
-      tournament_name: 'Test',
-      week: 'Week 1',
-      registration_open: true,
-      close_registration_on: futureClose,
-      session_date: futureSession,
-      courses: [{ name: 'Course A' }],
-      available_time_slots: [{ time: '20:00', day_offset: 0 }]
+      tournament: { name: 'Test' },
+      sessions: {
+        tournament_state: 'open',
+        week: 'Week 1',
+        registration_open: true,
+        close_registration_on: futureClose,
+        session_date: futureSession,
+        courses: [{ course_name: 'Course A' }],
+        available_time_slots: [{ time_slot: '20:00', day_offset: 0 }]
+      }
     };
 
     const result = manager.buildRegistrationMessage(data);
@@ -215,29 +224,27 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     const now = moment.utc();
     const sessionDate = now.clone().startOf('day').format('YYYY-MM-DD');
     const slotTime = now.clone().subtract(1, 'hour').format('HH:mm');
+    const slotEpoch = now.clone().subtract(1, 'hour').startOf('minute').unix();
 
     const data = {
-      tournament_state: 'ongoing',
-      tournament_name: 'Summer Classic',
-      week: 'Week 42',
-      session_date: sessionDate,
-      courses: [{ name: 'Sweetopia' }],
-      available_time_slots: [{ time: slotTime, day_offset: 0 }]
+      tournament: { name: 'Summer Classic' },
+      sessions: {
+        tournament_state: 'ongoing',
+        week: 'Week 42',
+        session_date: sessionDate,
+        courses: [{ course_name: 'Sweetopia' }],
+        available_time_slots: [{ time_slot: slotTime, day_offset: 0, player_count: 8, time_slot_status: 'current', session_date_epoch: slotEpoch }]
+      }
     };
 
     const result = manager.buildRegistrationMessage(data);
 
     const embed = result.embeds[0].toJSON();
     expect(embed.color).toBe(0xFFA500);
-    expect(embed.title).toBe('🏆 Week 42 (In Progress)');
-
-    // Check session date field uses full timestamp format
-    const sessionField = embed.fields.find(f => f.name === 'Session Date');
-    const expectedEpoch = moment.utc(sessionDate).unix();
-    expect(sessionField.value).toBe(`<t:${expectedEpoch}:F>`);
+    expect(embed.title).toBe('🏆 Week 42 (In Progress) ⛳️');
 
     // Check time slots field
-    const slotsField = embed.fields.find(f => f.name === 'Time Slots (UTC)');
+    const slotsField = embed.fields.find(f => f.name === 'Time Slots (UTC & Local)');
     expect(slotsField.value).toContain('UTC');
 
     // Check button is disabled
@@ -255,14 +262,16 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     const futureSession = moment.utc().add(5, 'days').format('YYYY-MM-DD');
 
     const data = {
-      tournament_state: 'open',
-      tournament_name: 'Test',
-      week: 'Week 1',
-      registration_open: true,
-      close_registration_on: futureClose,
-      session_date: futureSession,
-      courses: [],
-      available_time_slots: [{ time: '20:00', day_offset: 0 }]
+      tournament: { name: 'Test' },
+      sessions: {
+        tournament_state: 'open',
+        week: 'Week 1',
+        registration_open: true,
+        close_registration_on: futureClose,
+        session_date: futureSession,
+        courses: [],
+        available_time_slots: [{ time_slot: '20:00', day_offset: 0 }]
+      }
     };
 
     const result = manager.buildRegistrationMessage(data);
@@ -276,20 +285,22 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     const futureSession = moment.utc().add(5, 'days').format('YYYY-MM-DD');
 
     const data = {
-      tournament_state: 'open',
-      tournament_name: 'Test',
-      week: 'Week 1',
-      registration_open: true,
-      close_registration_on: futureClose,
-      session_date: futureSession,
-      courses: [{ name: 'Course A' }],
-      available_time_slots: []
+      tournament: { name: 'Test' },
+      sessions: {
+        tournament_state: 'open',
+        week: 'Week 1',
+        registration_open: true,
+        close_registration_on: futureClose,
+        session_date: futureSession,
+        courses: [{ course_name: 'Course A' }],
+        available_time_slots: []
+      }
     };
 
     const result = manager.buildRegistrationMessage(data);
     const embed = result.embeds[0].toJSON();
     const fieldNames = embed.fields.map(f => f.name);
-    expect(fieldNames).not.toContain('Time Slots');
+    expect(fieldNames).not.toContain('Time Slots (UTC)');
   });
 
   it('should always return exactly one embed and one component row', () => {
@@ -301,14 +312,16 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     // registration_open
     const futureClose = moment.utc().add(2, 'days').toISOString();
     result = manager.buildRegistrationMessage({
-      tournament_state: 'open',
-      tournament_name: 'T',
-      week: 'W1',
-      registration_open: true,
-      close_registration_on: futureClose,
-      session_date: moment.utc().add(5, 'days').format('YYYY-MM-DD'),
-      courses: [{ name: 'C' }],
-      available_time_slots: [{ time: '20:00', day_offset: 0 }]
+      tournament: { name: 'T' },
+      sessions: {
+        tournament_state: 'open',
+        week: 'W1',
+        registration_open: true,
+        close_registration_on: futureClose,
+        session_date: moment.utc().add(5, 'days').format('YYYY-MM-DD'),
+        courses: [{ course_name: 'C' }],
+        available_time_slots: [{ time_slot: '20:00', day_offset: 0 }]
+      }
     });
     expect(result.embeds).toHaveLength(1);
     expect(result.components).toHaveLength(1);
@@ -322,25 +335,31 @@ describe('RegistrationMessageManager.buildRegistrationMessage', () => {
     // registration_open
     const futureClose = moment.utc().add(2, 'days').toISOString();
     button = manager.buildRegistrationMessage({
-      tournament_state: 'open',
-      tournament_name: 'T',
-      week: 'W1',
-      registration_open: true,
-      close_registration_on: futureClose,
-      session_date: moment.utc().add(5, 'days').format('YYYY-MM-DD'),
-      courses: [],
-      available_time_slots: [{ time: '20:00', day_offset: 0 }]
+      tournament: { name: 'T' },
+      sessions: {
+        tournament_state: 'open',
+        week: 'W1',
+        registration_open: true,
+        close_registration_on: futureClose,
+        session_date: moment.utc().add(5, 'days').format('YYYY-MM-DD'),
+        courses: [],
+        available_time_slots: [{ time_slot: '20:00', day_offset: 0 }]
+      }
     }).components[0].toJSON().components[0];
     expect(button.custom_id).toBe('reg_register');
 
     // ongoing
     const now = moment.utc();
+    const ongoingSlotTime = now.clone().subtract(1, 'hour').format('HH:mm');
+    const ongoingSlotEpoch = now.clone().subtract(1, 'hour').startOf('minute').unix();
     button = manager.buildRegistrationMessage({
-      tournament_state: 'ongoing',
-      tournament_name: 'T',
-      week: 'W1',
-      session_date: now.clone().startOf('day').format('YYYY-MM-DD'),
-      available_time_slots: [{ time: now.clone().subtract(1, 'hour').format('HH:mm'), day_offset: 0 }]
+      tournament: { name: 'T' },
+      sessions: {
+        tournament_state: 'ongoing',
+        week: 'W1',
+        session_date: now.clone().startOf('day').format('YYYY-MM-DD'),
+        available_time_slots: [{ time_slot: ongoingSlotTime, day_offset: 0, player_count: 4, time_slot_status: 'current', session_date_epoch: ongoingSlotEpoch }]
+      }
     }).components[0].toJSON().components[0];
     expect(button.custom_id).toBe('reg_register');
   });
@@ -359,21 +378,23 @@ describe('RegistrationMessageManager.calculatePollingWindow', () => {
   });
 
   it('should return null when session_date is missing', () => {
-    expect(manager.calculatePollingWindow({ available_time_slots: [{ time: '22:00' }] })).toBeNull();
+    expect(manager.calculatePollingWindow({ sessions: { available_time_slots: [{ time_slot: '22:00' }] } })).toBeNull();
   });
 
   it('should return null when available_time_slots is empty', () => {
-    expect(manager.calculatePollingWindow({ session_date: '2024-08-10', available_time_slots: [] })).toBeNull();
+    expect(manager.calculatePollingWindow({ sessions: { session_date: '2024-08-10', available_time_slots: [] } })).toBeNull();
   });
 
   it('should return null when available_time_slots is not an array', () => {
-    expect(manager.calculatePollingWindow({ session_date: '2024-08-10', available_time_slots: 'invalid' })).toBeNull();
+    expect(manager.calculatePollingWindow({ sessions: { session_date: '2024-08-10', available_time_slots: 'invalid' } })).toBeNull();
   });
 
   it('should calculate correct window for a single slot (2hrs before, 8hrs after)', () => {
     const result = manager.calculatePollingWindow({
-      session_date: '2024-08-10',
-      available_time_slots: [{ time: '22:00', day_offset: 0 }]
+      sessions: {
+        session_date: '2024-08-10',
+        available_time_slots: [{ time_slot: '22:00', day_offset: 0 }]
+      }
     });
 
     expect(result).not.toBeNull();
@@ -383,8 +404,10 @@ describe('RegistrationMessageManager.calculatePollingWindow', () => {
 
   it('should account for day_offset in calculations', () => {
     const result = manager.calculatePollingWindow({
-      session_date: '2024-08-10',
-      available_time_slots: [{ time: '22:00', day_offset: -1 }]
+      sessions: {
+        session_date: '2024-08-10',
+        available_time_slots: [{ time_slot: '22:00', day_offset: -1 }]
+      }
     });
 
     expect(result).not.toBeNull();
@@ -395,12 +418,14 @@ describe('RegistrationMessageManager.calculatePollingWindow', () => {
 
   it('should span from earliest slot - 2hrs to latest slot + 8hrs across multiple slots', () => {
     const result = manager.calculatePollingWindow({
-      session_date: '2024-08-10',
-      available_time_slots: [
-        { time: '22:00', day_offset: -1 },
-        { time: '02:00', day_offset: 0 },
-        { time: '08:00', day_offset: 0 }
-      ]
+      sessions: {
+        session_date: '2024-08-10',
+        available_time_slots: [
+          { time_slot: '22:00', day_offset: -1 },
+          { time_slot: '02:00', day_offset: 0 },
+          { time_slot: '08:00', day_offset: 0 }
+        ]
+      }
     });
 
     expect(result).not.toBeNull();
@@ -410,8 +435,10 @@ describe('RegistrationMessageManager.calculatePollingWindow', () => {
 
   it('should default day_offset to 0 when not provided', () => {
     const result = manager.calculatePollingWindow({
-      session_date: '2024-08-10',
-      available_time_slots: [{ time: '14:00' }]
+      sessions: {
+        session_date: '2024-08-10',
+        available_time_slots: [{ time_slot: '14:00' }]
+      }
     });
 
     expect(result).not.toBeNull();
@@ -419,13 +446,15 @@ describe('RegistrationMessageManager.calculatePollingWindow', () => {
     expect(result.end.utc().format('YYYY-MM-DD HH:mm')).toBe('2024-08-10 22:00');   // 14:00 + 8hrs
   });
 
-  it('should skip slots with no time property', () => {
+  it('should skip slots with no time_slot property', () => {
     const result = manager.calculatePollingWindow({
-      session_date: '2024-08-10',
-      available_time_slots: [
-        { day_offset: 0 },
-        { time: '14:00', day_offset: 0 }
-      ]
+      sessions: {
+        session_date: '2024-08-10',
+        available_time_slots: [
+          { day_offset: 0 },
+          { time_slot: '14:00', day_offset: 0 }
+        ]
+      }
     });
 
     expect(result).not.toBeNull();
@@ -433,10 +462,12 @@ describe('RegistrationMessageManager.calculatePollingWindow', () => {
     expect(result.end.utc().format('YYYY-MM-DD HH:mm')).toBe('2024-08-10 22:00');
   });
 
-  it('should return null when all slots have no time property', () => {
+  it('should return null when all slots have no time_slot property', () => {
     const result = manager.calculatePollingWindow({
-      session_date: '2024-08-10',
-      available_time_slots: [{ day_offset: 0 }, { day_offset: -1 }]
+      sessions: {
+        session_date: '2024-08-10',
+        available_time_slots: [{ day_offset: 0 }, { day_offset: -1 }]
+      }
     });
 
     expect(result).toBeNull();
@@ -466,8 +497,10 @@ describe('RegistrationMessageManager.isWithinPollingWindow', () => {
     const slotTime = slotMoment.format('HH:mm');
 
     const data = {
-      session_date: sessionDate,
-      available_time_slots: [{ time: slotTime, day_offset: 0 }]
+      sessions: {
+        session_date: sessionDate,
+        available_time_slots: [{ time_slot: slotTime, day_offset: 0 }]
+      }
     };
 
     expect(manager.isWithinPollingWindow(data)).toBe(true);
@@ -478,8 +511,10 @@ describe('RegistrationMessageManager.isWithinPollingWindow', () => {
     const futureSession = moment.utc().add(10, 'days').format('YYYY-MM-DD');
 
     const data = {
-      session_date: futureSession,
-      available_time_slots: [{ time: '22:00', day_offset: -1 }]
+      sessions: {
+        session_date: futureSession,
+        available_time_slots: [{ time_slot: '22:00', day_offset: -1 }]
+      }
     };
 
     expect(manager.isWithinPollingWindow(data)).toBe(false);
@@ -492,8 +527,10 @@ describe('RegistrationMessageManager.isWithinPollingWindow', () => {
     const slotTime = now.clone().subtract(10, 'hours').format('HH:mm');
 
     const data = {
-      session_date: sessionDate,
-      available_time_slots: [{ time: slotTime, day_offset: 0 }]
+      sessions: {
+        session_date: sessionDate,
+        available_time_slots: [{ time_slot: slotTime, day_offset: 0 }]
+      }
     };
 
     expect(manager.isWithinPollingWindow(data)).toBe(false);
@@ -507,8 +544,10 @@ describe('RegistrationMessageManager.isWithinPollingWindow', () => {
     const slotTime = slotMoment.format('HH:mm');
 
     const data = {
-      session_date: sessionDate,
-      available_time_slots: [{ time: slotTime, day_offset: 0 }]
+      sessions: {
+        session_date: sessionDate,
+        available_time_slots: [{ time_slot: slotTime, day_offset: 0 }]
+      }
     };
 
     expect(manager.isWithinPollingWindow(data)).toBe(true);
@@ -567,8 +606,10 @@ describe('RegistrationMessageManager.startPolling / stopPolling', () => {
     const slotTime = slotMoment.format('HH:mm');
 
     manager.lastTournamentData = {
-      session_date: sessionDate,
-      available_time_slots: [{ time: slotTime, day_offset: 0 }]
+      sessions: {
+        session_date: sessionDate,
+        available_time_slots: [{ time_slot: slotTime, day_offset: 0 }]
+      }
     };
 
     manager.startPolling();
@@ -673,8 +714,10 @@ describe('RegistrationMessageManager._pollAndUpdate', () => {
 
     // New data puts us within the polling window
     const newData = {
-      session_date: sessionDate,
-      available_time_slots: [{ time: slotTime, day_offset: 0 }]
+      sessions: {
+        session_date: sessionDate,
+        available_time_slots: [{ time_slot: slotTime, day_offset: 0 }]
+      }
     };
     mockRegistrationService.getCurrentTournament.mockResolvedValue(newData);
     manager.messageReference = { channelId: '123', messageId: '456' };

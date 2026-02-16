@@ -205,6 +205,7 @@ export class TimezoneService {
       // 22:00 is typically the day before, others are same day
       const day_offset = timeSlot === '22:00' ? -1 : 0;
       const display = day_offset === -1 ? `${timeSlot} -1` : timeSlot;
+      // const session_date_epoch = timeSlot.session_date_epoch;
 
       return {
         time_slot: timeSlot,
@@ -253,6 +254,7 @@ export class TimezoneService {
         localTime: localTime.format('h:mm A'),
         localDate: localTime.format('MMM D'),
         localTimezone: localTime.format('z'),
+        session_date_epoch: timeSlot.session_date_epoch,
         dateChanged: utcTime.format('YYYY-MM-DD') !== localTime.format('YYYY-MM-DD'),
         display: this.formatTimeDisplay(utcTime, normalizedTimezone, {
           showDate: true,

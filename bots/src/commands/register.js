@@ -435,7 +435,8 @@ async function handleRegistrationConfirmation(interaction, session, timeSlot, us
           },
           {
             name: '⏰ Time Slot',
-            value: `${formattedSlot.utcTime} UTC\n${formattedSlot.localTime} ${formattedSlot.localTimezone}`,
+            value: `<t:${formattedSlot.session_date_epoch}:f> UTC\n${formattedSlot.localTime} ${formattedSlot.localTimezone}`,
+            // value: `${formattedSlot.utcTime} UTC\n${formattedSlot.localTime} ${formattedSlot.localTimezone}`,
             inline: true
           },
           {

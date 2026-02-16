@@ -368,7 +368,8 @@ class RegistrationButtonHandler {
         .setTitle('✅ Registration Successful!')
         .setDescription(`You have been registered for **${week}**`)
         .addFields(
-          { name: '⏰ Time Slot', value: timeDisplay, inline: true }
+          // { name: '⏰ Time Slot', value: timeDisplay, inline: true }
+          { name: '⏰ Time Slot', value: `<t:${selectedSlot.session_date_epoch}:f>`, inline: true }
         );
 
       if (Array.isArray(tournamentData.sessions.courses) && tournamentData.sessions.courses.length > 0) {
