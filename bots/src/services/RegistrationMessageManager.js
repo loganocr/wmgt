@@ -73,6 +73,10 @@ class RegistrationMessageManager {
       return null;
     }
 
+    if (!tournamentData.sessions.session_date) {
+      return null;
+    }
+
     const sessionDate = moment.utc(tournamentData.sessions.session_date).startOf('day');
     const startOffsetHrs = config.registration.pollingStartOffsetHrs;
     const endOffsetHrs = config.registration.pollingEndOffsetHrs;
@@ -152,10 +156,10 @@ class RegistrationMessageManager {
   _buildRegistrationOpenMessage(tournamentData) {
     const embed = new EmbedBuilder()
       .setColor(0x00AE86)
-      .setTitle(`🏆 ${tournamentData.tournament_name} — ${tournamentData.week}`);
+      .setTitle(`🏆 ${tournamentData.tournament?.name || 'Tournament'} — ${tournamentData.sessions?.week || ''}`);
 
-    if (tournamentData.session_date) {
-      const sessionEpoch = moment.utc(tournamentData.session_date).unix();
+    if (tournamentData.sessions?.session_date) {
+      const sessionEpoch = moment.utc(tournamentData.sessions.session_date).unix();
       embed.addFields({ name: 'Session Date', value: `<t:${sessionEpoch}:D>`, inline: true });
     }
 
@@ -171,8 +175,8 @@ class RegistrationMessageManager {
       embed.addFields({ name: 'Time Slots (UTC)', value: slotList, inline: false });
     }
 
-    if (tournamentData.close_registration_on) {
-      const closeEpoch = moment.utc(tournamentData.close_registration_on).unix();
+    if (tournamentData.sessions?.close_registration_on) {
+      const closeEpoch = moment.utc(tournamentData.sessions.close_registration_on).unix();
       embed.addFields({ name: 'Registration Closes', value: `<t:${closeEpoch}:R>`, inline: true });
     }
 

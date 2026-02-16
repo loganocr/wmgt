@@ -93,8 +93,8 @@ class RegistrationButtonHandler {
    * @param {object} tournamentData
    */
   async handleOngoingTournament(interaction, tournamentData) {
-    const timeSlots = tournamentData.sessions.available_time_slots || [];
-    const slotList = slotList
+    const timeSlots = tournamentData.sessions?.available_time_slots || [];
+    const slotList = timeSlots
         .map(s => '`' + s.time_slot + ' UTC`' + ' <t:' + s.session_date_epoch + ':t>')
         .join('\n');
 
@@ -135,8 +135,8 @@ class RegistrationButtonHandler {
 
     // 2. Format time slots with timezone info
     const formattedSlots = this.timezoneService.formatTournamentTimeSlots(
-      tournamentData.available_time_slots,
-      tournamentData.session_date,
+      tournamentData.sessions.available_time_slots,
+      tournamentData.sessions.session_date,
       timezone
     );
 
@@ -165,7 +165,7 @@ class RegistrationButtonHandler {
     const selectRow = new ActionRowBuilder().addComponents(selectMenu);
 
     // Build the prompt content
-    const week = tournamentData.week || 'Current Week';
+    const week = tournamentData.sessions.week || 'Current Week';
     let content = `⏰ **Select a time slot for ${week}:**`;
     if (isUTC) {
       content += '\n\n💡 *Tip: Use the `/timezone` command to set your timezone and see local times.*';
@@ -189,7 +189,7 @@ class RegistrationButtonHandler {
           // Time slot selected — show confirmation
           collector.stop('selection_made');
           await this._handleTimeSlotConfirmation(
-            componentInteraction, tournamentData, formattedSlots, timezone
+            interaction, componentInteraction, tournamentData, formattedSlots, timezone
           );
         }
       } catch (error) {
@@ -220,19 +220,20 @@ class RegistrationButtonHandler {
   /**
    * Show confirmation embed after time slot selection, then handle confirm/cancel.
    *
+   * @param {import('discord.js').ButtonInteraction} interaction - The ORIGINAL deferred interaction
    * @param {import('discord.js').StringSelectMenuInteraction} selectInteraction
    * @param {object} tournamentData
    * @param {Array} formattedSlots
    * @param {string} timezone
    * @private
    */
-  async _handleTimeSlotConfirmation(selectInteraction, tournamentData, formattedSlots, timezone) {
+  async _handleTimeSlotConfirmation(interaction, selectInteraction, tournamentData, formattedSlots, timezone) {
     await selectInteraction.deferUpdate();
 
     const selectedTimeSlot = selectInteraction.values[0];
     const selectedSlot = formattedSlots.find(s => s.value.time_slot === selectedTimeSlot);
 
-    const week = tournamentData.week || 'Current Week';
+    const week = tournamentData.sessions.week || 'Current Week';
     const isUTC = timezone === 'UTC';
 
     // Build time display
@@ -241,7 +242,7 @@ class RegistrationButtonHandler {
       : `${selectedSlot.localTime} ${selectedSlot.localTimezone} (${selectedSlot.utcTime} UTC)`;
 
     const dateDisplay = selectedSlot.dateChanged
-      ? `UTC: ${selectedSlot.utcDate} / Local: ${selectedSlot.localDate}`
+      ? `${selectedSlot.localDate} / UTC: ${selectedSlot.utcDate}`
       : selectedSlot.utcDate;
 
     // Build confirmation embed
@@ -254,17 +255,22 @@ class RegistrationButtonHandler {
         { name: '📅 Date', value: dateDisplay, inline: true }
       );
 
-    if (tournamentData.tournament_name) {
+    if (tournamentData.tournament?.name) {
       confirmEmbed.spliceFields(0, 0, {
         name: '🏆 Tournament',
-        value: tournamentData.tournament_name,
+        value: tournamentData.tournament.name,
         inline: true
       });
     }
 
+    if (Array.isArray(tournamentData.sessions.courses) && tournamentData.sessions.courses.length > 0) {
+      const courseList = tournamentData.sessions.courses.map(c => c.course_name).join('\n');
+      confirmEmbed.addFields({ name: '⛳ Courses', value: courseList, inline: false });
+    }
+
     // Build confirm/cancel buttons
     const confirmButton = new ButtonBuilder()
-      .setCustomId(`reg_confirm_${tournamentData.session_id}_${selectedTimeSlot}`)
+      .setCustomId(`reg_confirm_${tournamentData.sessions.id}_${selectedTimeSlot}`)
       .setLabel('Confirm Registration')
       .setStyle(ButtonStyle.Success)
       .setEmoji('✅');
@@ -277,7 +283,7 @@ class RegistrationButtonHandler {
 
     const buttonRow = new ActionRowBuilder().addComponents(confirmButton, cancelButton);
 
-    const confirmMessage = await selectInteraction.editReply({
+    const confirmMessage = await interaction.editReply({
       content: null,
       embeds: [confirmEmbed],
       components: [buttonRow]
@@ -285,7 +291,7 @@ class RegistrationButtonHandler {
 
     // Collect confirm/cancel button clicks
     const buttonCollector = confirmMessage.createMessageComponentCollector({
-      filter: (i) => i.user.id === selectInteraction.user.id,
+      filter: (i) => i.user.id === interaction.user.id,
       componentType: ComponentType.Button,
       time: 300000 // 5 minutes
     });
@@ -299,7 +305,8 @@ class RegistrationButtonHandler {
           );
         } else if (buttonInteraction.customId === 'reg_cancel') {
           buttonCollector.stop('cancelled');
-          await buttonInteraction.update({
+          await buttonInteraction.deferUpdate();
+          await interaction.editReply({
             content: '❌ Registration cancelled.',
             embeds: [],
             components: []
@@ -308,7 +315,7 @@ class RegistrationButtonHandler {
       } catch (error) {
         this.logger.error('Error handling confirmation button', { error: error.message });
         try {
-          await selectInteraction.editReply({
+          await interaction.editReply({
             content: '❌ An error occurred. Please try again.',
             embeds: [],
             components: []
@@ -321,7 +328,7 @@ class RegistrationButtonHandler {
 
     buttonCollector.on('end', (collected, reason) => {
       if (reason === 'time') {
-        selectInteraction.editReply({
+        interaction.editReply({
           content: '⏰ Confirmation timed out. Click **Register Now** again to start over.',
           embeds: [],
           components: []
@@ -346,12 +353,12 @@ class RegistrationButtonHandler {
     try {
       const result = await this.registrationService.registerPlayer(
         buttonInteraction.user,
-        tournamentData.session_id,
+        tournamentData.sessions.id,
         selectedTimeSlot,
         timezone
       );
 
-      const week = tournamentData.week || 'Current Week';
+      const week = tournamentData.sessions.week || 'Current Week';
       const isUTC = timezone === 'UTC';
       const timeDisplay = isUTC
         ? `${selectedSlot.utcTime} UTC`
@@ -446,8 +453,8 @@ class RegistrationButtonHandler {
         .setColor(0x0099FF)
         .setTitle('📋 Your Current Registration')
         .addFields(
-          { name: '🏆 Tournament', value: currentRegistration.tournament_name || tournamentData.tournament_name || 'Unknown', inline: true },
-          { name: '📅 Week', value: currentRegistration.week || tournamentData.week || 'Unknown', inline: true },
+          { name: '🏆 Tournament', value: currentRegistration.tournament_name || tournamentData.tournament?.name || 'Unknown', inline: true },
+          { name: '📅 Week', value: currentRegistration.week || tournamentData.sessions?.week || 'Unknown', inline: true },
           { name: '⏰ Time Slot', value: timeSlotDisplay, inline: false },
           { name: '📆 Session Date', value: currentRegistration.session_date || 'Unknown', inline: true }
         );
@@ -570,8 +577,8 @@ class RegistrationButtonHandler {
 
       // 3. Format available time slots
       const formattedSlots = this.timezoneService.formatTournamentTimeSlots(
-        tournamentData.available_time_slots,
-        tournamentData.session_date,
+        tournamentData.sessions.available_time_slots,
+        tournamentData.sessions.session_date,
         timezone
       );
 
@@ -599,7 +606,7 @@ class RegistrationButtonHandler {
 
       const selectRow = new ActionRowBuilder().addComponents(selectMenu);
 
-      const week = tournamentData.week || 'Current Week';
+      const week = tournamentData.sessions.week || 'Current Week';
       let content = `🔄 **Select a new time slot for ${week}:**\n\nYou have been unregistered from your previous slot (${currentRegistration.time_slot} UTC).`;
       if (isUTC) {
         content += '\n\n💡 *Tip: Use the `/timezone` command to set your timezone and see local times.*';
@@ -629,7 +636,7 @@ class RegistrationButtonHandler {
             try {
               const result = await this.registrationService.registerPlayer(
                 interaction.user,
-                tournamentData.session_id,
+                tournamentData.sessions.id,
                 selectedTimeSlot,
                 timezone
               );
