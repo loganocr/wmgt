@@ -170,9 +170,19 @@ class RegistrationMessageManager {
 
     if (Array.isArray(tournamentData.sessions.available_time_slots) && tournamentData.sessions.available_time_slots.length > 0) {
       const slotList = tournamentData.sessions.available_time_slots
-        .map(s => '`' + s.time_slot + ' UTC`' + ' <t:' + s.session_date_epoch + ':t>')
-        .join('\n');
-      embed.addFields({ name: 'Time Slots (UTC & Local)', value: slotList, inline: false });
+        .map(s =>
+            '`' + 
+            s.time_slot + ' UTC` ' + 
+            `(\`${s.player_count.toString().padStart(2, ' ')}p\`) ` +
+            ' <t:' + s.session_date_epoch + ':t> '
+        ).join('\n');
+
+      const totalPlayers = tournamentData.sessions.available_time_slots
+        .reduce((sum, s) => sum + (s.player_count || 0), 0);
+
+      embed.addFields({ name: 'Time Slots: UTC (Players) Local Time)', value: slotList, inline: false });
+      embed.addFields({ name: 'Total Players', value: totalPlayers.toString(), inline: true });
+
     }
 
     if (tournamentData.sessions?.close_registration_on) {
