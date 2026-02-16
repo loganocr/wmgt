@@ -371,6 +371,12 @@ class RegistrationButtonHandler {
           { name: '⏰ Time Slot', value: timeDisplay, inline: true }
         );
 
+      if (Array.isArray(tournamentData.sessions.courses) && tournamentData.sessions.courses.length > 0) {
+        const courseList = tournamentData.sessions.courses.map(c => c.course_name).join('\n');
+        successEmbed.addFields({ name: '⛳ Courses', value: courseList, inline: false });
+      }
+        
+
       if (result.registration?.room_no) {
         successEmbed.addFields({
           name: '🏠 Room',
@@ -424,27 +430,25 @@ class RegistrationButtonHandler {
     async handleExistingRegistration(interaction, registrationData, tournamentData) {
       const currentRegistration = registrationData.registrations[0];
 
-      // Get player's timezone for local time display
-      const timezone = await this.timezoneService.getUserTimezone(
-        this.registrationService,
-        interaction.user.id
-      );
+      // Find the matching time slot from tournament data to get the epoch
+      const timeSlots = tournamentData.sessions?.available_time_slots || [];
+      const matchedSlot = timeSlots.find(s => s.time_slot === currentRegistration.time_slot);
 
-      const isUTC = timezone === 'UTC';
-
-      // Format time slot display
-      const timeSlotUTC = `${currentRegistration.time_slot} UTC`;
-      let timeSlotDisplay = timeSlotUTC;
-      if (!isUTC) {
-        const formattedSlots = this.timezoneService.formatTournamentTimeSlots(
-          [{ time: currentRegistration.time_slot, day_offset: 0 }],
-          currentRegistration.session_date,
-          timezone
-        );
-        if (formattedSlots.length > 0) {
-          const slot = formattedSlots[0];
-          timeSlotDisplay = `${slot.localTime} ${slot.localTimezone} (${timeSlotUTC})`;
-        }
+      // Build time slot display using Discord epoch timestamp (auto-localizes for each user)
+/*      
+      let timeSlotDisplay;
+      if (matchedSlot?.session_date_epoch) {
+        timeSlotDisplay = `\`${currentRegistration.time_slot} UTC\` <t:${matchedSlot.session_date_epoch}:t>`;
+      } else {
+        timeSlotDisplay = `${currentRegistration.time_slot} UTC`;
+      }
+*/
+      // Build session date display using Discord epoch timestamp
+      let sessionDateDisplay;
+      if (matchedSlot?.session_date_epoch) {
+        sessionDateDisplay = `<t:${matchedSlot.session_date_epoch}:f>`;
+      } else {
+        sessionDateDisplay = currentRegistration.session_date || 'Unknown';
       }
 
       // Build embed showing current registration details
@@ -454,8 +458,8 @@ class RegistrationButtonHandler {
         .addFields(
           { name: '🏆 Tournament', value: currentRegistration.tournament_name || tournamentData.tournament?.name || 'Unknown', inline: true },
           { name: '📅 Week', value: currentRegistration.week || tournamentData.sessions?.week || 'Unknown', inline: true },
-          { name: '⏰ Time Slot', value: timeSlotDisplay, inline: false },
-          { name: '📆 Session Date', value: currentRegistration.session_date || 'Unknown', inline: true }
+        //  { name: '⏰ Time Slot', value: timeSlotDisplay, inline: false },
+          { name: '📆 Signed up for', value: sessionDateDisplay, inline: false }
         );
 
       // Build "Change Time Slot" and "Unregister" buttons
@@ -778,7 +782,7 @@ class RegistrationButtonHandler {
 
           try {
             await this.registrationService.unregisterPlayer(
-              interaction.user.id,
+              interaction.user,
               currentRegistration.session_id
             );
 
@@ -811,7 +815,7 @@ class RegistrationButtonHandler {
         } else if (buttonInteraction.customId === 'reg_cancel') {
           buttonCollector.stop('cancelled');
           await buttonInteraction.update({
-            content: '❌ Unregistration cancelled. Your registration is unchanged.',
+            content: '👌 Your registration is unchanged.',
             embeds: [],
             components: []
           });

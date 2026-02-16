@@ -213,8 +213,8 @@ export class DiscordTournamentBot {
       if (!interaction.isMessageComponent()) return;
 
       try {
-        // Route registration button interactions
-        if (interaction.isButton() && interaction.customId.startsWith('reg_')) {
+        // Route registration button interactions (only the initial register button)
+        if (interaction.isButton() && interaction.customId === 'reg_register') {
           await this.registrationButtonHandler.handleRegisterButton(interaction);
           return;
         }
