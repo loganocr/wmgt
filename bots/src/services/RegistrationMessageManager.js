@@ -197,7 +197,7 @@ class RegistrationMessageManager {
   _buildOngoingMessage(tournamentData) {
     const embed = new EmbedBuilder()
       .setColor(0xFFA500)
-      .setTitle(`🏆 ${tournamentData.sessions.week} (In Progress) ⛳️`);
+      .setTitle(`⛳️ 🏆 ${tournamentData.sessions.week} (In Progress) <:gameon:1336174091828465734>`);
 
     if (Array.isArray(tournamentData.sessions.courses) && tournamentData.sessions.courses.length > 0) {
       const courseList = tournamentData.sessions.courses.map(c => c.course_name).join('\n');
