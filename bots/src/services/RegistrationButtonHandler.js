@@ -22,6 +22,26 @@ class RegistrationButtonHandler {
   }
 
   /**
+   * Refresh the persistent registration message immediately after a mutation
+   * so player counts/time slots reflect the latest backend state.
+   *
+   * @private
+   */
+  async _refreshRegistrationMessage() {
+    if (!this.registrationMessageManager) {
+      return;
+    }
+
+    try {
+      const latestTournamentData = await this.registrationService.getCurrentTournament();
+      await this.registrationMessageManager.updateMessage(latestTournamentData);
+      this.registrationMessageManager.lastTournamentData = latestTournamentData;
+    } catch (error) {
+      this.logger.warn('Failed to refresh registration message after mutation', { error: error.message });
+    }
+  }
+
+  /**
    * Main entry point: route button click based on tournament state and player registration.
    *
    * Flow:
@@ -399,6 +419,8 @@ class RegistrationButtonHandler {
         embeds: [successEmbed],
         components: []
       });
+
+      await this._refreshRegistrationMessage();
     } catch (error) {
       this.logger.error('Registration failed', { error: error.message });
 
@@ -679,6 +701,8 @@ class RegistrationButtonHandler {
                 embeds: [successEmbed],
                 components: []
               });
+
+              await this._refreshRegistrationMessage();
             } catch (regError) {
               this.logger.error('Re-registration failed during time slot change', { error: regError.message });
 
@@ -803,6 +827,8 @@ class RegistrationButtonHandler {
               embeds: [successEmbed],
               components: []
             });
+
+            await this._refreshRegistrationMessage();
           } catch (error) {
             this.logger.error('Unregistration failed', { error: error.message });
 

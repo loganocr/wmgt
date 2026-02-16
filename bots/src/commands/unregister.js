@@ -172,9 +172,11 @@ export default {
         components
       });
 
+      const replyMessage = await interaction.fetchReply();
+
       // Handle registration selection
       const filter = (i) => i.user.id === interaction.user.id;
-      const collector = interaction.channel.createMessageComponentCollector({
+      const collector = replyMessage.createMessageComponentCollector({
         filter,
         componentType: ComponentType.StringSelect,
         time: 300000 // 5 minutes
@@ -190,7 +192,7 @@ export default {
       });
 
       // Handle cancel button
-      const buttonCollector = interaction.channel.createMessageComponentCollector({
+      const buttonCollector = replyMessage.createMessageComponentCollector({
         filter,
         componentType: ComponentType.Button,
         time: 300000 // 5 minutes
@@ -320,9 +322,11 @@ async function handleUnregistrationSelection(interaction, registrationData, form
       components: [confirmRow]
     });
 
+    const replyMessage = await interaction.fetchReply();
+
     // Handle confirmation
     const filter = (i) => i.user.id === interaction.user.id;
-    const confirmCollector = interaction.channel.createMessageComponentCollector({
+    const confirmCollector = replyMessage.createMessageComponentCollector({
       filter,
       componentType: ComponentType.Button,
       time: 60000 // 1 minute for confirmation
