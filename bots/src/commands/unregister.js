@@ -285,12 +285,7 @@ async function handleUnregistrationSelection(interaction, registrationData, form
       .addFields(
         {
           name: '⏰ Time Slot',
-          value: `${registrationData.time_slot}`,
-          inline: true
-        },
-        {
-          name: '📅 Date',
-          value: `${formattedTime}`,
+          value: `${registrationData.time_slot} <t:${registrationData.session_date_epoch}:f>`,
           inline: true
         }
       );

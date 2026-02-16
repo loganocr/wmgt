@@ -494,6 +494,7 @@ class RegistrationButtonHandler {
 
       collector.on('collect', async (buttonInteraction) => {
         try {
+          await buttonInteraction.deferUpdate();
           if (buttonInteraction.customId === 'reg_change_slot') {
             collector.stop('change_slot');
             await this.handleTimeSlotChange(interaction, currentRegistration, tournamentData);
@@ -554,7 +555,7 @@ class RegistrationButtonHandler {
       // 1. Unregister from current slot
       try {
         await this.registrationService.unregisterPlayer(
-          interaction.user.id,
+          interaction.user,
           currentRegistration.session_id
         );
       } catch (error) {
@@ -728,6 +729,7 @@ class RegistrationButtonHandler {
   async handleUnregister(interaction, currentRegistration) {
     const week = currentRegistration.week || 'Current Week';
     const timeSlot = currentRegistration.time_slot || 'Unknown';
+    const sessionEpoch = currentRegistration.session_date_epoch || 'Unknown';
 
     // Build confirmation embed
     const confirmEmbed = new EmbedBuilder()
@@ -735,8 +737,7 @@ class RegistrationButtonHandler {
       .setTitle('⚠️ Confirm Unregistration')
       .setDescription(`Are you sure you want to unregister from **${week}**?`)
       .addFields(
-        { name: '⏰ Time Slot', value: `${timeSlot} UTC`, inline: true },
-        { name: '📅 Session Date', value: currentRegistration.session_date || 'Unknown', inline: true }
+        { name: '⏰ Time Slot', value: `${timeSlot} UTC <t:${sessionEpoch}:f>`, inline: true }
       );
 
     if (currentRegistration.tournament_name) {
