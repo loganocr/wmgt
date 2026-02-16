@@ -232,6 +232,8 @@ class RegistrationButtonHandler {
 
     const selectedTimeSlot = selectInteraction.values[0];
     const selectedSlot = formattedSlots.find(s => s.value.time_slot === selectedTimeSlot);
+    const timeSlot = selectedTimeSlot || 'Unknown';
+    const sessionEpoch = selectedSlot.session_date_epoch || 'Unknown';
 
     const week = tournamentData.sessions.week || 'Current Week';
     const isUTC = timezone === 'UTC';
@@ -251,8 +253,10 @@ class RegistrationButtonHandler {
       .setTitle('⚠️ Confirm Registration')
       .setDescription(`Please confirm your registration for **${week}**`)
       .addFields(
-        { name: '⏰ Time Slot', value: timeDisplay, inline: true },
-        { name: '📅 Date', value: dateDisplay, inline: true }
+        { name: '⏰ Time Slot', value: `${timeSlot} UTC <t:${sessionEpoch}:f>`, inline: true }
+        
+//        { name: '⏰ Time Slot', value: timeDisplay, inline: true },
+//        { name: '📅 Date', value: dateDisplay, inline: true }
       );
 
     if (tournamentData.tournament?.name) {
@@ -264,7 +268,7 @@ class RegistrationButtonHandler {
     }
 
     if (Array.isArray(tournamentData.sessions.courses) && tournamentData.sessions.courses.length > 0) {
-      const courseList = tournamentData.sessions.courses.map(c => c.course_name).join('\n');
+      const courseList = tournamentData.sessions.courses.map(c => '•' + c.course_name).join('\n');
       confirmEmbed.addFields({ name: '⛳ Courses', value: courseList, inline: false });
     }
 
@@ -373,7 +377,7 @@ class RegistrationButtonHandler {
         );
 
       if (Array.isArray(tournamentData.sessions.courses) && tournamentData.sessions.courses.length > 0) {
-        const courseList = tournamentData.sessions.courses.map(c => c.course_name).join('\n');
+        const courseList = tournamentData.sessions.courses.map(c => '•' + c.course_name).join('\n');
         successEmbed.addFields({ name: '⛳ Courses', value: courseList, inline: false });
       }
         
