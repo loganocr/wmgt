@@ -24,6 +24,8 @@ select row_number() over (order by day_offset, t) seq
      , day_offset
      , time_slot
      , time_slot || case when day_offset = -1 then ' -1' end prepared_time_slot
+     , lead(day_offset) over (order by day_offset, time_slot) next_day_offset
+     , lead(time_slot) over (order by day_offset, time_slot) next_time_slot
      , t
 from slots
 /
