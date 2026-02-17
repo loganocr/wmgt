@@ -164,7 +164,7 @@ class RegistrationMessageManager {
     }
 
     if (Array.isArray(tournamentData.sessions.courses) && tournamentData.sessions.courses.length > 0) {
-      const courseList = tournamentData.sessions.courses.map(c => c.course_name).join('\n');
+      const courseList = tournamentData.sessions.courses.map(c => '•' + c.course_name).join('\n');
       embed.addFields({ name: 'Courses', value: courseList, inline: true });
     }
 
@@ -181,7 +181,7 @@ class RegistrationMessageManager {
       const totalPlayers = tournamentData.sessions.available_time_slots
         .reduce((sum, s) => sum + (s.player_count || 0), 0);
 
-      embed.addFields({ name: 'Time Slots: UTC (Players) Local Time', value: slotList, inline: false });
+      embed.addFields({ name: 'UTC Time Slots | (Players) | Local Time', value: slotList, inline: false });
       embed.addFields({ name: 'Total Players', value: totalPlayers.toString(), inline: true });
 
     }
@@ -193,7 +193,7 @@ class RegistrationMessageManager {
 
     const button = new ButtonBuilder()
       .setCustomId('reg_register')
-      .setLabel('Register Now')
+      .setLabel('Register Now...')
       .setStyle(ButtonStyle.Success)
       .setEmoji('🏌️');
 
