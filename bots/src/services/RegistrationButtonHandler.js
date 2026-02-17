@@ -9,6 +9,7 @@ import {
 import { config } from '../config/config.js';
 import { logger } from '../utils/Logger.js';
 import { MyStatusService } from './MyStatusService.js';
+import { getRulesText } from './RulesProvider.js';
 
 /**
  * Handles all button and component interactions originating from the registration message.
@@ -233,9 +234,9 @@ class RegistrationButtonHandler {
     collector.on('collect', async (componentInteraction) => {
       try {
         if (componentInteraction.customId === 'reg_timeslot_select') {
-          // Time slot selected — show confirmation
+          // Time slot selected — show rules then confirmation
           collector.stop('selection_made');
-          await this._handleTimeSlotConfirmation(
+          await this._handleRulesDisplay(
             interaction, componentInteraction, tournamentData, formattedSlots, timezone
           );
         }
@@ -265,6 +266,108 @@ class RegistrationButtonHandler {
   }
 
   /**
+   * Shows tournament rules to the player and waits for acknowledgment before proceeding to confirmation.
+   *
+   * @param {import('discord.js').ButtonInteraction} interaction - The ORIGINAL deferred interaction
+   * @param {import('discord.js').StringSelectMenuInteraction} selectInteraction
+   * @param {object} tournamentData
+   * @param {Array} formattedSlots
+   * @param {string} timezone
+   * @private
+   */
+  async _handleRulesDisplay(interaction, selectInteraction, tournamentData, formattedSlots, timezone) {
+    await selectInteraction.deferUpdate();
+
+    let rulesText;
+    try {
+      rulesText = await getRulesText();
+    } catch (error) {
+      this.logger.error('Failed to load tournament rules', { error: error.message });
+      // Fallback: proceed directly to confirmation without rules
+      await this._handleTimeSlotConfirmation(interaction, null, tournamentData, formattedSlots, timezone, selectInteraction.values[0]);
+      return;
+    }
+
+    // Truncate if exceeding Discord embed description limit (4096 chars)
+    const maxLen = 4096;
+    let description = rulesText;
+    if (description.length > maxLen) {
+      description = description.substring(0, maxLen - 50) + '\n\n...Rules truncated. Visit the tournament website for full details.';
+    }
+
+    const rulesEmbed = new EmbedBuilder()
+      .setColor(0x0099FF)
+      .setTitle('📜 Tournament Rules')
+      .setDescription(description)
+      .setFooter({ text: 'Please read the rules carefully before proceeding.' });
+
+    const acknowledgeButton = new ButtonBuilder()
+      .setCustomId('reg_rules_acknowledge')
+      .setLabel('I Acknowledge the Rules')
+      .setStyle(ButtonStyle.Success)
+      .setEmoji('✅');
+
+    const cancelButton = new ButtonBuilder()
+      .setCustomId('reg_rules_cancel')
+      .setLabel('Cancel')
+      .setStyle(ButtonStyle.Danger)
+      .setEmoji('❌');
+
+    const buttonRow = new ActionRowBuilder().addComponents(acknowledgeButton, cancelButton);
+
+    const rulesMessage = await interaction.editReply({
+      content: null,
+      embeds: [rulesEmbed],
+      components: [buttonRow]
+    });
+
+    const buttonCollector = rulesMessage.createMessageComponentCollector({
+      filter: (i) => i.user.id === interaction.user.id,
+      componentType: ComponentType.Button,
+      time: 300000 // 5 minutes
+    });
+
+    const selectedTimeSlot = selectInteraction.values[0];
+
+    buttonCollector.on('collect', async (buttonInteraction) => {
+      try {
+        if (buttonInteraction.customId === 'reg_rules_acknowledge') {
+          buttonCollector.stop('acknowledged');
+          await this._handleTimeSlotConfirmation(interaction, buttonInteraction, tournamentData, formattedSlots, timezone, selectedTimeSlot);
+        } else if (buttonInteraction.customId === 'reg_rules_cancel') {
+          buttonCollector.stop('cancelled');
+          await buttonInteraction.update({
+            content: '👌 Registration cancelled.',
+            embeds: [],
+            components: []
+          });
+        }
+      } catch (error) {
+        this.logger.error('Error handling rules button', { error: error.message });
+        try {
+          await interaction.editReply({
+            content: '❌ An error occurred. Please try again.',
+            embeds: [],
+            components: []
+          });
+        } catch (editError) {
+          // Interaction may have expired
+        }
+      }
+    });
+
+    buttonCollector.on('end', (collected, reason) => {
+      if (reason === 'time') {
+        interaction.editReply({
+          content: '⏰ Rules acknowledgment timed out. Click **Register Now** again to start over.',
+          embeds: [],
+          components: []
+        }).catch(() => {});
+      }
+    });
+  }
+
+  /**
    * Show confirmation embed after time slot selection, then handle confirm/cancel.
    *
    * @param {import('discord.js').ButtonInteraction} interaction - The ORIGINAL deferred interaction
@@ -274,10 +377,12 @@ class RegistrationButtonHandler {
    * @param {string} timezone
    * @private
    */
-  async _handleTimeSlotConfirmation(interaction, selectInteraction, tournamentData, formattedSlots, timezone) {
-    await selectInteraction.deferUpdate();
+  async _handleTimeSlotConfirmation(interaction, selectInteraction, tournamentData, formattedSlots, timezone, selectedTimeSlotOverride) {
+    if (selectInteraction) {
+      await selectInteraction.deferUpdate();
+    }
 
-    const selectedTimeSlot = selectInteraction.values[0];
+    const selectedTimeSlot = selectedTimeSlotOverride || selectInteraction.values[0];
     const selectedSlot = formattedSlots.find(s => s.value.time_slot === selectedTimeSlot);
     const timeSlot = selectedTimeSlot || 'Unknown';
     const sessionEpoch = selectedSlot.session_date_epoch || 'Unknown';
