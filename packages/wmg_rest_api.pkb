@@ -19,8 +19,10 @@ function format_session_date_utc(
 is
   l_scope scope_t := gc_scope_prefix || 'format_session_date_utc';
 begin
+    $IF $$VERBOSE_OUTPUT $THEN
     logger.log('START', l_scope);
     logger.log(p_text => '.. p_date: ' || p_date, p_scope => l_scope);
+    $END
     return to_char(p_date, 'YYYY-MM-DD') || '"T"' || p_time_slot || ':SS"Z"';
 end format_session_date_utc;
 
@@ -33,8 +35,10 @@ function convert_session_date_utc(
 is
   l_scope scope_t := gc_scope_prefix || 'convert_session_date_utc';
 begin
+    $IF $$VERBOSE_OUTPUT $THEN
     logger.log('START', l_scope);
     logger.log(p_text => '.. p_date: ' || p_date, p_scope => l_scope);
+    $END
 
     return from_tz(
          cast(p_date
@@ -59,10 +63,12 @@ is
   l_local_date timestamp with time zone;
   l_local varchar2(200);
 begin
+    $IF $$VERBOSE_OUTPUT $THEN
     logger.log('START', l_scope);
     logger.log(p_text => '.. p_date: ' || p_date, p_scope => l_scope);
     logger.log(p_text => '.. p_time_slot: ' || p_time_slot, p_scope => l_scope);
     logger.log(p_text => '.. p_timezone: ' || p_timezone, p_scope => l_scope);
+    $END
 
     if p_date is null then
         return null;
@@ -82,12 +88,16 @@ begin
    where ts.time_slot = p_time_slot;
 
   -- get the local user time without timezone
+  $IF $$VERBOSE_OUTPUT $THEN
   logger.log(l_local_date);
+  $END
 
   -- add the timezone
   l_local_date := l_local_date  at time zone p_timezone;
   -- get the local user time
+  $IF $$VERBOSE_OUTPUT $THEN
   logger.log(l_local_date);
+  $END
 
 --   return to_char(l_local_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"');
   return to_char(l_local_date, 'fmDy, fmMonth fmDD') 
@@ -120,9 +130,12 @@ is
   l_utc_date timestamp with time zone;
   l_epoch number;
 begin
-    logger.log('START', l_scope);
-    logger.log(p_text => '.. p_date: ' || p_date, p_scope => l_scope);
-    logger.log(p_text => '.. p_time_slot: ' || p_time_slot, p_scope => l_scope);
+   $IF $$VERBOSE_OUTPUT $THEN
+   logger.log('START', l_scope);
+   logger.log(p_text => '.. p_date: ' || p_date, p_scope => l_scope);
+   logger.log(p_text => '.. p_time_slot: ' || p_time_slot, p_scope => l_scope);  
+   $END
+
 
    select convert_session_date_utc(
               p_date => p_date + ts.day_offset
@@ -132,7 +145,7 @@ begin
     from wmg_time_slots_all_v ts
    where ts.time_slot = p_time_slot;
 
-  logger.log(p_text => '.. l_utc_date: ' || l_utc_date, p_scope => l_scope);
+  -- logger.log(p_text => '.. l_utc_date: ' || l_utc_date, p_scope => l_scope);
   l_epoch := round(
                   ( extract(day    from (l_utc_date at time zone 'UTC' 
                                          - timestamp '1970-01-01 00:00:00 UTC')) * 86400   -- 86400 is the number of seconds in a day
@@ -144,7 +157,9 @@ begin
                                          - timestamp '1970-01-01 00:00:00 UTC'))
                   )
               );
+  $IF $$VERBOSE_OUTPUT $THEN
   logger.log(p_text => '.. l_epoch: ' || l_epoch, p_scope => l_scope);
+  $END
 
   return l_epoch;
 
