@@ -193,7 +193,7 @@ class RegistrationMessageManager {
 
     const button = new ButtonBuilder()
       .setCustomId('reg_register')
-      .setLabel('Register Now...')
+      .setLabel('Register/Unregister...')
       .setStyle(ButtonStyle.Success)
       .setEmoji('🏌️');
 
@@ -237,7 +237,7 @@ class RegistrationMessageManager {
           return '`' + s.time_slot + ' UTC` ' + `(\`${playerCount.toString().padStart(2, ' ')}p\`) ` + marker + localTime;
         })
         .join('\n');
-      embed.addFields({ name: 'Time Slots (UTC & Local)', value: slotList, inline: false });
+      embed.addFields({ name: 'UTC Time Slots | (Players) | Local Time', value: slotList, inline: false });      
     }
 
     embed.addFields({ name: 'Legend:', value: '✅ - Done, ⬅️ - Now playing' , inline: false });
