@@ -406,20 +406,8 @@ async function handleUnregistrationConfirmation(interaction, registration, forma
       // Create success embed
       const successEmbed = new EmbedBuilder()
         .setColor(0x00FF00)
-        .setTitle('✅ Unregistration Successful!')
-        .setDescription(`You have been successfully unregistered from **${registration.week}**`)
-        .addFields(
-          {
-            name: '⏰ Time Slot',
-            value: `${registration.time_slot}`,
-            inline: true
-          },
-          {
-            name: '📅 Date',
-            value: `${formattedTime}`,
-            inline: true
-          }
-        );
+        .setTitle('👋 Unregistration Successful!')
+        .setDescription(`You have been successfully unregistered from **${registration.week}**`);
 
       if (registration.room_no) {
         successEmbed.addFields({

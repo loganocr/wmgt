@@ -950,9 +950,9 @@ class RegistrationButtonHandler {
 
             const successEmbed = new EmbedBuilder()
               .setColor(0x00FF00)
-              .setTitle('✅ Unregistration Successful')
+              .setTitle('👋 Unregistration Successful')
               .setDescription(`You have been unregistered from **${week}**.`)
-              .setFooter({ text: 'Click Register Now to sign up for a different time slot.' });
+              .setFooter({ text: 'Click "Register Now..." again to sign up for a different time slot.' });
 
             await interaction.editReply({
               content: null,
